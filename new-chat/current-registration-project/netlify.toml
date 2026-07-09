@@ -1,4 +1,0 @@
-[build]
-  publish = "registration-app"
-  functions = "netlify/functions"
-

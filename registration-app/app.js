@@ -1,14 +1,7 @@
 (function () {
   const STORAGE_KEY = "kvutze-registration-draft-v1";
   const DEV_SKIP_REQUIRED_VALIDATION = true;
-  const DEV_SKIP_PAYMENT_VALIDATION = true;
   const config = window.APP_CONFIG || {};
-  const formStartedAt = new Date().toISOString();
-  try {
-    localStorage.removeItem(STORAGE_KEY);
-  } catch {
-    // Ignore storage access errors in private browsing modes.
-  }
 
   const yeshivaOptions = [
     "אור יהודה",
@@ -1074,28 +1067,6 @@
       ]
     },
     {
-      id: "registration_payment",
-      title: "דמי הרשמה",
-      fields: [
-        {
-          id: "registration_payment_info",
-          type: "intro_text",
-          title: "תשלום דמי הרשמה",
-          paragraphs: [
-            "כדי להמשיך לסיכום ושליחת הטופס, יש לשלם דמי הרשמה חד־פעמיים בסך 10 דולר.",
-            "התשלום מתבצע בצורה מאובטחת דרך Stripe. לאחר אישור התשלום תחזרו לטופס ותוכלו להמשיך לסיכום הפרטים ולשליחת הבקשה."
-          ],
-          signature: []
-        },
-        {
-          id: "registration_payment",
-          type: "payment",
-          required: true,
-          amountUsd: 10
-        }
-      ]
-    },
-    {
       id: "next_steps",
       title: "המשך תהליך הרישום",
       fields: [
@@ -1174,19 +1145,6 @@
   const nextBtn = document.getElementById("nextBtn");
   const submitBtn = document.getElementById("submitBtn");
   const form = document.getElementById("registrationForm");
-  const spamTrapInput = document.getElementById("contactCompany");
-  const submissionProgress = document.getElementById("submissionProgress");
-  const submissionProgressTitle = document.getElementById("submissionProgressTitle");
-  const submissionProgressPercent = document.getElementById("submissionProgressPercent");
-  const submissionProgressBar = document.getElementById("submissionProgressBar");
-  let submissionProgressTimer = null;
-  const submissionProgressSteps = [
-    { title: "מכין את הטופס לשליחה...", percent: 12 },
-    { title: "מצרף את הקבצים...", percent: 28 },
-    { title: "שולח את הנתונים...", percent: 46 },
-    { title: "שומר את הקבצים...", percent: 72 },
-    { title: "מסיים רישום ושולח אישור...", percent: 90 }
-  ];
   const visibilityControllerIds = new Set(
     steps.flatMap((step) =>
       step.fields.flatMap((field) =>
@@ -1208,7 +1166,6 @@
   nextBtn.addEventListener("click", nextStep);
   form.addEventListener("submit", submitRegistration);
 
-  handlePaymentReturn();
   render();
 
   function render() {
@@ -1296,20 +1253,6 @@
         return;
       }
 
-      if (field.type === "payment") {
-        wrapper.className = "field full";
-        wrapper.dataset.field = field.id;
-        wrapper.appendChild(createPaymentPanel(field));
-
-        const error = document.createElement("div");
-        error.className = "error";
-        error.id = `${field.id}_error`;
-        wrapper.appendChild(error);
-
-        formFields.appendChild(wrapper);
-        return;
-      }
-
       const fullWidthTypes = ["textarea", "checkbox_group", "radio", "file", "signature"];
       const fullWidth = fullWidthTypes.includes(field.type) || field.layout === "wide";
       wrapper.className = `field ${fullWidth ? "full" : ""} ${field.layout === "pair" ? "pair" : ""} ${field.agreement ? "agreement-field" : ""}`;
@@ -1351,7 +1294,6 @@
       formFields.querySelectorAll("[data-edit-step]").forEach((button) => {
         button.addEventListener("click", () => goToStep(button.dataset.editStep));
       });
-      formFields.querySelector("[data-print-review]")?.addEventListener("click", () => window.print());
     }
   }
 
@@ -1434,111 +1376,22 @@
       return label;
     }
 
-    if (field.type === "file") return createFileInput(field);
-
     const input = document.createElement("input");
     input.id = field.id;
-    input.type = field.type;
+    input.type = field.type === "file" ? "file" : field.type;
+    if (field.type === "file" && field.multiple) input.multiple = true;
     if (field.autocomplete) input.autocomplete = field.autocomplete;
     input.disabled = isDisabled(field);
     if (field.defaultValue && state.values[field.id] === undefined) state.values[field.id] = field.defaultValue;
-    input.value = state.values[field.id] || field.defaultValue || "";
-    input.addEventListener("input", onInput);
+    if (field.type !== "file") input.value = state.values[field.id] || field.defaultValue || "";
+    if (field.type === "file") {
+      input.addEventListener("change", (event) => {
+        state.files[field.id] = field.multiple ? Array.from(event.target.files) : event.target.files[0] || null;
+      });
+    } else {
+      input.addEventListener("input", onInput);
+    }
     return input;
-  }
-
-  function createFileInput(field) {
-    const control = document.createElement("div");
-    control.className = "file-control";
-
-    const input = document.createElement("input");
-    input.id = field.id;
-    input.type = "file";
-    input.className = "file-picker";
-    if (field.multiple) input.multiple = true;
-    if (field.accept) input.accept = field.accept;
-    input.disabled = isDisabled(field);
-
-    let fileMode = "add";
-    input.addEventListener("change", (event) => {
-      const selectedFiles = Array.from(event.target.files || []);
-      if (!selectedFiles.length) return;
-
-      if (field.multiple) {
-        const currentFiles = fileMode === "replace" ? [] : fileList(state.files[field.id]).filter(Boolean);
-        state.files[field.id] = [...currentFiles, ...selectedFiles];
-      } else {
-        state.files[field.id] = selectedFiles[0] || null;
-      }
-
-      input.value = "";
-      render();
-    });
-
-    control.appendChild(input);
-
-    const selectedFiles = fileList(state.files[field.id]).filter(Boolean);
-    const hasFiles = selectedFiles.length > 0;
-
-    if (hasFiles) {
-      const list = document.createElement("div");
-      list.className = "selected-files";
-
-      selectedFiles.forEach((file, index) => {
-        const item = document.createElement("div");
-        item.className = "selected-file";
-
-        const name = document.createElement("span");
-        name.className = "selected-file-name";
-        name.textContent = `${file.name}${file.size ? ` (${formatFileSize(file.size)})` : ""}`;
-        item.appendChild(name);
-
-        const removeButton = document.createElement("button");
-        removeButton.type = "button";
-        removeButton.className = "file-action file-remove";
-        removeButton.textContent = "הסר";
-        removeButton.addEventListener("click", () => {
-          if (field.multiple) {
-            state.files[field.id] = selectedFiles.filter((_, fileIndex) => fileIndex !== index);
-          } else {
-            state.files[field.id] = null;
-          }
-          render();
-        });
-        item.appendChild(removeButton);
-        list.appendChild(item);
-      });
-
-      control.appendChild(list);
-    }
-
-    const actions = document.createElement("div");
-    actions.className = "file-actions";
-
-    const chooseButton = document.createElement("button");
-    chooseButton.type = "button";
-    chooseButton.className = "file-action";
-    chooseButton.textContent = hasFiles ? "החלף" : field.multiple ? "בחר קבצים" : "בחר קובץ";
-    chooseButton.addEventListener("click", () => {
-      fileMode = "replace";
-      input.click();
-    });
-    actions.appendChild(chooseButton);
-
-    if (field.multiple && hasFiles) {
-      const addButton = document.createElement("button");
-      addButton.type = "button";
-      addButton.className = "file-action";
-      addButton.textContent = "הוסף עוד קובץ";
-      addButton.addEventListener("click", () => {
-        fileMode = "add";
-        input.click();
-      });
-      actions.appendChild(addButton);
-    }
-
-    control.appendChild(actions);
-    return control;
   }
 
   function resolveList(value) {
@@ -1729,190 +1582,6 @@
     return steps.flatMap((step) => step.fields).find((item) => item.id === fieldId);
   }
 
-  function createPaymentPanel(field) {
-    const panel = document.createElement("div");
-    panel.className = "payment-panel";
-
-    const status = state.values.registration_payment_status;
-    const sessionId = state.values.registration_payment_session_id;
-    const paid = isRegistrationPaymentPaid();
-    const verifying = status === "verifying";
-    const failed = status === "failed";
-    const cancelled = status === "cancelled";
-    const devSkipped = status === "dev_skipped";
-
-    const title = devSkipped ? "התשלום דולג לצורך בדיקה" : paid ? "התשלום התקבל" : verifying ? "בודק את אישור התשלום..." : "תשלום דמי הרשמה";
-    const description = devSkipped
-      ? "מצב בדיקות פעיל כרגע, ולכן אפשר להמשיך לסיכום בלי לשלם בפועל. בפרסום אמיתי נכבה את האפשרות הזו."
-      : paid
-        ? `דמי ההרשמה בסך ${field.amountUsd} דולר שולמו בהצלחה. ניתן להמשיך לשלב הבא.`
-        : verifying
-          ? "אנחנו מאמתים מול Stripe שהתשלום עבר בהצלחה. זה אמור לקחת כמה שניות."
-          : `יש לשלם ${field.amountUsd} דולר כדי להמשיך לסיכום ושליחת הטופס.`;
-
-    panel.innerHTML = `
-      <div class="payment-panel-content">
-        <strong>${escapeHtml(title)}</strong>
-        <span>${escapeHtml(description)}</span>
-        ${failed ? `<span class="payment-warning">לא הצלחנו לאמת את התשלום. אם חויבתם, אפשר לבדוק שוב או לפנות למשרד.</span>` : ""}
-        ${cancelled ? `<span class="payment-warning">התשלום בוטל. ניתן לנסות שוב.</span>` : ""}
-      </div>
-    `;
-
-    if (DEV_SKIP_PAYMENT_VALIDATION && !paid && !verifying) {
-      const skipButton = document.createElement("button");
-      skipButton.type = "button";
-      skipButton.className = "payment-button secondary-payment-button";
-      skipButton.textContent = "דלג לתשלום לצורך בדיקה";
-      skipButton.addEventListener("click", skipRegistrationPaymentForDev);
-      panel.appendChild(skipButton);
-    }
-
-    if (failed && sessionId) {
-      const retryButton = document.createElement("button");
-      retryButton.type = "button";
-      retryButton.className = "payment-button secondary-payment-button";
-      retryButton.textContent = "בדוק שוב את התשלום";
-      retryButton.addEventListener("click", () => retryRegistrationPaymentVerification(sessionId, retryButton));
-      panel.appendChild(retryButton);
-    }
-
-    if (!paid && !verifying) {
-      const button = document.createElement("button");
-      button.type = "button";
-      button.className = "payment-button registration-payment-start";
-      button.textContent = "לתשלום מאובטח ב-Stripe";
-      button.addEventListener("click", () => startRegistrationPayment(field, button));
-      panel.appendChild(button);
-    }
-
-    return panel;
-  }
-
-  function skipRegistrationPaymentForDev() {
-    state.values.registration_payment_status = "dev_skipped";
-    state.values.registration_payment_session_id = "dev-skip";
-    state.values.registration_payment_amount_usd = 10;
-    state.values.registration_payment_paid_at = null;
-    saveDraft(false);
-    render();
-  }
-
-  async function startRegistrationPayment(field, button = document.querySelector(".registration-payment-start")) {
-    if (button) {
-      button.disabled = true;
-      button.textContent = "מעביר לתשלום...";
-    }
-    formError.textContent = "";
-
-    try {
-      saveDraft(false);
-      const response = await fetch("/.netlify/functions/create-registration-payment", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          amountUsd: field.amountUsd,
-          studentEmail: state.values.student_email || "",
-          studentName: `${state.values.student_first_name_en || state.values.student_first_name_he || ""} ${state.values.student_last_name_en || state.values.student_last_name_he || ""}`.trim()
-        })
-      });
-
-      const result = await response.json().catch(() => ({}));
-      if (!response.ok || !result.url) {
-        throw new Error(result.error || "לא ניתן לפתוח את עמוד התשלום כרגע.");
-      }
-
-      state.values.registration_payment_status = "pending";
-      state.values.registration_payment_session_id = result.id || "";
-      saveDraft(false);
-      window.location.href = result.url;
-    } catch (error) {
-      formError.textContent = error.message || "פתיחת התשלום נכשלה.";
-      if (button) {
-        button.disabled = false;
-        button.textContent = "לתשלום מאובטח ב-Stripe";
-      }
-    }
-  }
-
-  async function handlePaymentReturn() {
-    const params = new URLSearchParams(window.location.search);
-    const payment = params.get("payment");
-    const sessionId = params.get("session_id");
-    if (!payment) return;
-
-    const paymentStepIndex = steps.findIndex((step) => step.id === "registration_payment");
-    if (paymentStepIndex >= 0) state.stepIndex = paymentStepIndex;
-
-    if (payment === "registration_cancelled") {
-      state.values.registration_payment_status = "cancelled";
-      saveDraft(false);
-      cleanPaymentUrl();
-      render();
-      return;
-    }
-
-    if (payment === "registration_success" && sessionId) {
-      state.values.registration_payment_status = "verifying";
-      state.values.registration_payment_session_id = sessionId;
-      saveDraft(false);
-      cleanPaymentUrl();
-      render();
-
-      try {
-        const verified = await verifyRegistrationPayment(sessionId);
-        state.values.registration_payment_status = verified.paid ? "paid" : "failed";
-        state.values.registration_payment_paid_at = verified.paid ? verified.paidAt || new Date().toISOString() : null;
-        state.values.registration_payment_amount_usd = typeof verified.amountUsd === "number" ? verified.amountUsd : 10;
-      } catch {
-        state.values.registration_payment_status = "failed";
-        state.values.registration_payment_paid_at = null;
-      }
-
-      saveDraft(false);
-      render();
-    }
-  }
-
-  async function retryRegistrationPaymentVerification(sessionId, button) {
-    if (button) {
-      button.disabled = true;
-      button.textContent = "בודק שוב...";
-    }
-    state.values.registration_payment_status = "verifying";
-    saveDraft(false);
-    render();
-
-    try {
-      const verified = await verifyRegistrationPayment(sessionId);
-      state.values.registration_payment_status = verified.paid ? "paid" : "failed";
-      state.values.registration_payment_paid_at = verified.paid ? verified.paidAt || new Date().toISOString() : null;
-      state.values.registration_payment_amount_usd = typeof verified.amountUsd === "number" ? verified.amountUsd : 10;
-    } catch {
-      state.values.registration_payment_status = "failed";
-      state.values.registration_payment_paid_at = null;
-    }
-
-    saveDraft(false);
-    render();
-  }
-
-  async function verifyRegistrationPayment(sessionId) {
-    const response = await fetch(`/.netlify/functions/verify-registration-payment?session_id=${encodeURIComponent(sessionId)}`);
-    const result = await response.json().catch(() => ({}));
-    if (!response.ok) throw new Error(result.error || "אימות התשלום נכשל.");
-    return result;
-  }
-
-  function cleanPaymentUrl() {
-    window.history.replaceState({}, document.title, `${window.location.origin}${window.location.pathname}`);
-  }
-
-  function isRegistrationPaymentPaid() {
-    if (DEV_SKIP_PAYMENT_VALIDATION && state.values.registration_payment_status === "dev_skipped") return true;
-    return state.values.registration_payment_status === "paid" && Boolean(state.values.registration_payment_session_id);
-  }
-
   function nextStep() {
     if (!validateStep()) return;
     if (state.returnToReviewFromStep === steps[state.stepIndex].id) {
@@ -1996,11 +1665,6 @@
         valid = false;
       }
 
-      if (field.type === "payment" && field.required && !DEV_SKIP_PAYMENT_VALIDATION && !isRegistrationPaymentPaid()) {
-        setError(field.id, "יש להשלים את תשלום דמי ההרשמה לפני המשך.");
-        valid = false;
-      }
-
       if (field.type === "email" && value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
         setError(field.id, "כתובת אימייל לא תקינה");
         valid = false;
@@ -2036,9 +1700,6 @@
     event.preventDefault();
     if (!validateStep()) return;
 
-    const paymentOk = await ensureRegistrationPaymentVerified();
-    if (!paymentOk) return;
-
     const hasGoogleWebhook = config.GOOGLE_APPS_SCRIPT_URL && !config.GOOGLE_APPS_SCRIPT_URL.includes("YOUR_DEPLOYMENT_ID");
     const hasSupabase =
       config.SUPABASE_URL &&
@@ -2051,7 +1712,6 @@
     }
 
     submitBtn.disabled = true;
-    startSubmissionProgress();
     submitBtn.textContent = "שולח...";
 
     try {
@@ -2059,12 +1719,11 @@
 
       if (hasGoogleWebhook) {
         await submitToGoogle(payload);
-        sessionStorage.removeItem(STORAGE_KEY);
+        localStorage.removeItem(STORAGE_KEY);
         showSuccess();
         return;
       }
 
-      setSubmissionProgress(2);
       const registration = await supabaseFetch("/rest/v1/registrations", {
         method: "POST",
         headers: { Prefer: "return=representation" },
@@ -2072,61 +1731,18 @@
       });
 
       const registrationId = registration[0].id;
-      setSubmissionProgress(3);
       await uploadAllFiles(registrationId);
-      sessionStorage.removeItem(STORAGE_KEY);
-      finishSubmissionProgress();
+      localStorage.removeItem(STORAGE_KEY);
       showSuccess();
     } catch (error) {
-      stopSubmissionProgress();
       formError.textContent = error.message || "השליחה נכשלה. נסה שוב.";
       submitBtn.disabled = false;
       submitBtn.textContent = "שלח הרשמה";
     }
   }
 
-  async function ensureRegistrationPaymentVerified() {
-    if (DEV_SKIP_PAYMENT_VALIDATION && state.values.registration_payment_status === "dev_skipped") return true;
-
-    const paymentStepIndex = steps.findIndex((step) => step.id === "registration_payment");
-    if (!isRegistrationPaymentPaid()) {
-      if (paymentStepIndex >= 0) {
-        state.stepIndex = paymentStepIndex;
-        saveDraft(false);
-        render();
-      }
-      formError.textContent = "יש להשלים את תשלום דמי ההרשמה לפני שליחת הטופס.";
-      return false;
-    }
-
-    try {
-      const verified = await verifyRegistrationPayment(state.values.registration_payment_session_id);
-      if (verified.paid) {
-        state.values.registration_payment_status = "paid";
-        state.values.registration_payment_paid_at = verified.paidAt || state.values.registration_payment_paid_at || new Date().toISOString();
-        state.values.registration_payment_amount_usd = typeof verified.amountUsd === "number" ? verified.amountUsd : 10;
-        saveDraft(false);
-        return true;
-      }
-    } catch {
-      // The message below is clearer for the user than the technical failure.
-    }
-
-    state.values.registration_payment_status = "failed";
-    state.values.registration_payment_paid_at = null;
-    saveDraft(false);
-    if (paymentStepIndex >= 0) {
-      state.stepIndex = paymentStepIndex;
-      render();
-    }
-    formError.textContent = "לא הצלחנו לאמת את התשלום מול Stripe. לא ניתן לשלוח את הטופס לפני אימות תשלום.";
-    return false;
-  }
-
   async function submitToGoogle(payload) {
-    setSubmissionProgress(1);
     const files = await collectFilesForGoogle();
-    setSubmissionProgress(2);
     const response = await fetch(config.GOOGLE_APPS_SCRIPT_URL, {
       method: "POST",
       body: JSON.stringify({
@@ -2134,56 +1750,12 @@
         files
       })
     });
-    setSubmissionProgress(4);
 
     if (!response.ok) {
       throw new Error("השליחה ל-Google נכשלה.");
     }
 
-    const result = await response.json().catch(() => ({}));
-    if (!result?.ok) {
-      throw new Error(result?.error || "השליחה ל-Google נכשלה.");
-    }
-    finishSubmissionProgress();
-    return result;
-  }
-
-  function startSubmissionProgress() {
-    setSubmissionProgress(0);
-    let stepIndex = 0;
-    clearInterval(submissionProgressTimer);
-    submissionProgressTimer = setInterval(() => {
-      stepIndex = Math.min(stepIndex + 1, submissionProgressSteps.length - 1);
-      setSubmissionProgress(stepIndex);
-      if (stepIndex >= submissionProgressSteps.length - 1) {
-        clearInterval(submissionProgressTimer);
-        submissionProgressTimer = null;
-      }
-    }, 4500);
-  }
-
-  function setSubmissionProgress(stepIndex) {
-    const step = submissionProgressSteps[Math.max(0, Math.min(stepIndex, submissionProgressSteps.length - 1))];
-    submissionProgress?.classList.remove("hidden");
-    if (submissionProgressTitle) submissionProgressTitle.textContent = step.title;
-    if (submissionProgressPercent) submissionProgressPercent.textContent = `${step.percent}%`;
-    if (submissionProgressBar) submissionProgressBar.style.width = `${step.percent}%`;
-  }
-
-  function finishSubmissionProgress() {
-    clearInterval(submissionProgressTimer);
-    submissionProgressTimer = null;
-    if (submissionProgressTitle) submissionProgressTitle.textContent = "השליחה הושלמה בהצלחה.";
-    if (submissionProgressPercent) submissionProgressPercent.textContent = "100%";
-    if (submissionProgressBar) submissionProgressBar.style.width = "100%";
-  }
-
-  function stopSubmissionProgress() {
-    clearInterval(submissionProgressTimer);
-    submissionProgressTimer = null;
-    submissionProgress?.classList.add("hidden");
-    if (submissionProgressBar) submissionProgressBar.style.width = "0";
-    if (submissionProgressPercent) submissionProgressPercent.textContent = "0%";
+    return response.json();
   }
 
   async function collectFilesForGoogle() {
@@ -2269,8 +1841,8 @@
       visa: visaValue(),
       visa_other: values.arrival_visa === "אחר" ? values.arrival_visa_other || null : null,
       needs_student_visa: values.student_visa_needed === "כן",
-      prior_f1_visa_during_group: priorF1DisplayValue() || null,
-      prior_f1_visa_valid: priorF1ValidDisplayValue() || null,
+      prior_f1_visa_during_group: values.prior_f1_visa_during_group || null,
+      prior_f1_visa_valid: values.prior_f1_visa_valid || null,
       prior_f1_visa_expiration: values.prior_f1_visa_expiration || null,
       student_visa_rules_accepted: studentVisaRulesAccepted(),
       student_visa_signature_signed_at: values.student_visa_signature ? new Date().toISOString() : null,
@@ -2287,10 +1859,6 @@
       parents_state: values.parents_state || null,
       parents_zip: values.parents_zip || null,
       parent_response_email: responseEmail,
-      registration_payment_status: values.registration_payment_status || null,
-      registration_payment_session_id: values.registration_payment_session_id || null,
-      registration_payment_amount_usd: values.registration_payment_amount_usd || 10,
-      registration_payment_paid_at: values.registration_payment_paid_at || null,
       discount_request_type: values.discount_request_type || null,
       family_children_count: values.family_children_count || null,
       children_with_tuition_count: values.children_with_tuition_count || null,
@@ -2354,8 +1922,6 @@
       media_permission: mediaPermissionValue(),
       media_permission_text: values.media_permission || null,
       media_signature_signed_at: values.media_signature ? new Date().toISOString() : null,
-      _form_started_at: formStartedAt,
-      _contact_company: spamTrapInput?.value || "",
       submitted_at: new Date().toISOString()
     };
   }
@@ -2415,20 +1981,14 @@
   }
 
   function reviewCards() {
-    const cards = [
+    return [
       reviewCard("פרטי תלמיד", "student", studentReviewRows()),
       reviewCard("אשרת שהייה", "visa", visaReviewRows()),
       reviewCard("פרטי ההורים", "parents", parentsReviewRows()),
+      reviewCard("שליחת תשובת הרישום", "next_steps", responseReviewRows()),
       reviewCard("שכר לימוד", "tuition", tuitionReviewRows()),
-      reviewCard("בריאות", "emergency_health", healthReviewRows()),
-      reviewCard("שליחת תשובת הרישום", "next_steps", responseReviewRows())
+      reviewCard("בריאות", "emergency_health", healthReviewRows())
     ].join("");
-    return `
-      <div class="review-toolbar">
-        <button type="button" class="secondary review-print" data-print-review>הדפס / שמור PDF</button>
-      </div>
-      ${cards}
-    `;
   }
 
   function reviewCard(title, stepId, rows) {
@@ -2458,7 +2018,7 @@
       ["שם מלא בעברית", `${state.values.student_first_name_he || ""} ${state.values.student_last_name_he || ""}`.trim()],
       ["שם מלא באנגלית", `${state.values.student_first_name_en || ""} ${state.values.student_last_name_en || ""}`.trim()],
       ["תאריך לידה עברי", state.values.birth_date_he],
-      ["תאריך לידה לועזי", formatDateDdMmYyyy(state.values.birth_date)],
+      ["תאריך לידה לועזי", state.values.birth_date],
       ["מקום לידה", compactJoin([state.values.birth_city, state.values.birth_country, state.values.birth_zip])],
       ["שנת קבוצה", state.values.student_group_year || defaultGroupYear],
       ...yeshivaReviewRows(),
@@ -2479,8 +2039,10 @@
   function visaReviewRows() {
     return [
       ["סוג האשרה", visaDisplayValue()],
-      ["ויזת F-1 במהלך הקבוצה", priorF1DisplayValue()],
-      ["תוקף ויזת F-1", priorF1ValidDisplayValue()]
+      ["האם נדרשת ויזת סטודנט", state.values.student_visa_needed],
+      ["ויזת F-1 במהלך הקבוצה", state.values.prior_f1_visa_during_group],
+      ["האם ויזת F-1 בתוקף", state.values.prior_f1_visa_valid],
+      ["תאריך תפוגת ויזת F-1", state.values.prior_f1_visa_expiration]
     ];
   }
 
@@ -2492,7 +2054,6 @@
       ["שם האם", state.values.mother_name],
       ["טלפון האם", state.values.mother_phone],
       ["אימייל האם", state.values.mother_email],
-      ["האם ההורים גרים יחד", parentsLiveTogetherValue()],
       ["כתובת", compactJoin([state.values.parents_street, state.values.parents_city, state.values.parents_state, state.values.parents_zip])]
     ];
   }
@@ -2503,23 +2064,10 @@
     ];
   }
 
-  function paymentReviewRows() {
-    return [
-      ["סטטוס תשלום", paymentStatusReviewValue()],
-      ["סכום", `${state.values.registration_payment_amount_usd || 10} דולר`],
-      ["מספר אישור Stripe", state.values.registration_payment_session_id],
-      ["זמן תשלום", state.values.registration_payment_paid_at]
-    ];
-  }
-
-  function paymentStatusReviewValue() {
-    if (state.values.registration_payment_status === "dev_skipped") return "דולג לצורך בדיקה";
-    return isRegistrationPaymentPaid() ? "שולם" : "לא שולם";
-  }
-
   function tuitionReviewRows() {
     const rows = [
-      ["מסלול התשלום שנבחר", tuitionPlanReviewValue()]
+      ["מסלול התשלום שנבחר", state.values.discount_request_type],
+      ["האם הוגשה בקשת הנחה", discountRequestSummary()]
     ];
     if (state.values.discount_request_type === "אני מבקש הנחה נוספת בהתאם למצב הכלכלי, ואמלא את טופס בקשת ההנחה.") {
       rows.push(
@@ -2527,20 +2075,13 @@
         ["ילדים במוסדות בתשלום", state.values.children_with_tuition_count],
         ["עיסוק האב", state.values.father_occupation],
         ["עיסוק האם", state.values.mother_occupation],
-        ["שכר לימוד בשנה שעברה", formatCurrencyAmount(state.values.last_year_tuition_ils, "שקל")],
+        ["שכר לימוד בשנה שעברה", state.values.last_year_tuition_ils],
         ["נסיבות כלכליות", discountCircumstancesValues().join(", ")],
         ["נימוק לבקשת ההנחה", state.values.discount_reason],
-        ["סכום שכר לימוד מבוקש", formatCurrencyAmount(state.values.requested_monthly_tuition_usd, "דולר")]
+        ["סכום שכר לימוד מבוקש", state.values.requested_monthly_tuition_usd]
       );
     }
     return rows;
-  }
-
-  function tuitionPlanReviewValue() {
-    const selected = state.values.discount_request_type || "";
-    if (!selected) return "";
-    if (selected.startsWith("עלות בחור מליאה")) return `${tuitionAmounts().full} דולר לחודש`;
-    return "הוגשה בקשת הנחה";
   }
 
   function healthReviewRows() {
@@ -2557,17 +2098,6 @@
 
   function compactJoin(parts) {
     return parts.filter((part) => !isEmptyReviewValue(part)).join(", ");
-  }
-
-  function formatDateDdMmYyyy(value) {
-    const match = String(value || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
-    if (!match) return value || "";
-    return `${match[3]}/${match[2]}/${match[1]}`;
-  }
-
-  function formatCurrencyAmount(value, currency) {
-    if (isEmptyReviewValue(value)) return "";
-    return `${value} ${currency}`;
   }
 
   function formatReviewValue(value) {
@@ -2700,7 +2230,9 @@
     const selectedGroup = state.values.student_group_year || defaultGroupYear;
     if (selectedGroup === defaultGroupYear) {
       return [
-        ["ישיבה תשפ״ו", yeshivaValue("5786")]
+        ["ישיבה תשפ״ו", yeshivaValue("5786")],
+        ["ישיבה תשפ״ה", state.values.same_yeshiva_3_years ? yeshivaValue("5786") : yeshivaValue("5785")],
+        ["ישיבה תשפ״ד", state.values.same_yeshiva_3_years ? yeshivaValue("5786") : yeshivaValue("5784")]
       ];
     }
     const groupData = groupYearMap[selectedGroup] || groupYearMap[defaultGroupYear];
@@ -2728,15 +2260,7 @@
   }
 
   function fileList(fileValue) {
-    if (!fileValue) return [];
     return Array.isArray(fileValue) ? fileValue : [fileValue];
-  }
-
-  function formatFileSize(bytes) {
-    if (!Number.isFinite(bytes) || bytes <= 0) return "";
-    if (bytes < 1024) return `${bytes} B`;
-    if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   }
 
   function clearErrors() {
@@ -2750,7 +2274,7 @@
   }
 
   function saveDraft(showMessage = true) {
-    sessionStorage.setItem(STORAGE_KEY, JSON.stringify({
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
       values: state.values,
       stepIndex: state.stepIndex
     }));
@@ -2764,7 +2288,7 @@
 
   function loadDraft() {
     try {
-      const draft = JSON.parse(sessionStorage.getItem(STORAGE_KEY) || "{}");
+      const draft = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
       return draft && typeof draft === "object" && "values" in draft ? draft.values || {} : draft;
     } catch {
       return {};
@@ -2773,7 +2297,7 @@
 
   function loadDraftStep() {
     try {
-      const draft = JSON.parse(sessionStorage.getItem(STORAGE_KEY) || "{}");
+      const draft = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
       const stepIndex = Number(draft?.stepIndex);
       return Number.isInteger(stepIndex) && stepIndex >= 0 && stepIndex < steps.length ? stepIndex : 0;
     } catch {
@@ -2926,15 +2450,9 @@
     const values = state.values;
     if (!values.prior_f1_visa_during_group) return "";
     if (values.prior_f1_visa_during_group === "לא") return "לא הייתה ויזת F-1 במהלך הקבוצה";
-    return priorF1ValidDisplayValue() || "הייתה ויזת F-1 במהלך הקבוצה";
-  }
-
-  function priorF1ValidDisplayValue() {
-    const values = state.values;
-    if (values.prior_f1_visa_during_group !== "כן") return "";
-    if (values.prior_f1_visa_valid === "כן") return `בתוקף עד ${values.prior_f1_visa_expiration || ""}`.trim();
-    if (values.prior_f1_visa_valid === "לא") return "אינה בתוקף";
-    return "";
+    if (values.prior_f1_visa_valid === "כן") return `הייתה ויזה והיא בתוקף עד ${values.prior_f1_visa_expiration || ""}`.trim();
+    if (values.prior_f1_visa_valid === "לא") return "הייתה ויזה, אינה בתוקף";
+    return "הייתה ויזת F-1 במהלך הקבוצה";
   }
 
   function arrivalDateDisplayValue() {

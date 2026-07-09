@@ -37,25 +37,9 @@
         </div>
 
         <form id="registrationForm" novalidate>
-          <div class="spam-check" aria-hidden="true">
-            <label for="contactCompany">Company</label>
-            <input id="contactCompany" name="company" type="text" tabindex="-1" autocomplete="off" />
-          </div>
-
           <div id="formFields" class="fields"></div>
 
           <div id="formError" class="form-error" role="alert"></div>
-
-          <div id="submissionProgress" class="submission-progress hidden" aria-live="polite">
-            <div class="submission-progress-head">
-              <strong id="submissionProgressTitle">מכין את הטופס לשליחה...</strong>
-              <span id="submissionProgressPercent">0%</span>
-            </div>
-            <div class="submission-progress-track" aria-hidden="true">
-              <div id="submissionProgressBar" class="submission-progress-bar"></div>
-            </div>
-            <p id="submissionProgressNote">נא להשאיר את החלון פתוח עד לסיום השליחה.</p>
-          </div>
 
           <div class="actions">
             <button id="prevBtn" class="secondary" type="button">חזור</button>

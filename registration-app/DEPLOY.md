@@ -55,30 +55,11 @@ python -m http.server 8000
 
 הכי פשוט:
 
-### Netlify עם תשלום Stripe
+### Netlify Drop
 
-כיוון שהתשלום משתמש ב-Netlify Functions, צריך לפרסם את תיקיית הפרויקט הראשית, לא רק את `registration-app`.
-
-יש לפרסם את התיקייה שמכילה:
-
-- `netlify.toml`
-- `netlify/functions/create-registration-payment.js`
-- `netlify/functions/verify-registration-payment.js`
-- `registration-app/`
-
-ב-Netlify יש להגדיר Environment variable:
-
-```text
-STRIPE_SECRET_KEY=sk_live_...
-```
-
-לבדיקות משתמשים במפתח בדיקה של Stripe:
-
-```text
-STRIPE_SECRET_KEY=sk_test_...
-```
-
-הקבצים הציבוריים עדיין מוגשים מתוך `registration-app`, לפי ההגדרה בקובץ `netlify.toml`.
+1. ודא שיש `config.js` אמיתי בתיקייה.
+2. גרור את כל תיקיית `registration-app` ל-Netlify Drop.
+3. תקבל קישור ציבורי.
 
 ### Vercel
 
@@ -120,5 +101,5 @@ STRIPE_SECRET_KEY=sk_test_...
 - דשבורד ניהול.
 - Magic link לטיוטה בין מכשירים.
 - מיילים אוטומטיים.
-- לבדוק תשלום Stripe במצב test ולאחר מכן לעבור למפתח live.
+- תשלום, אם תרצה.
 - עיצוב סופי לפי המיתוג שלכם.

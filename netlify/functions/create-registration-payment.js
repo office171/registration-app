@@ -1,5 +1,5 @@
 const STRIPE_CHECKOUT_URL = "https://api.stripe.com/v1/checkout/sessions";
-const REGISTRATION_FEE_CENTS = 100;
+const REGISTRATION_FEE_CENTS = 1000;
 
 exports.handler = async (event) => {
   if (event.httpMethod !== "POST") {

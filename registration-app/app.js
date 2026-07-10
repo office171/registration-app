@@ -33,6 +33,8 @@
   ];
   const groupYearOptions = ["קבוצה תשפ\"ז", "קבוצה תשפ\"ו", "קבוצה תשפ\"ה", "קבוצה תשפ\"ד"];
   const defaultGroupYear = "קבוצה תשפ\"ז";
+  const additionalDiscountOption = "אני מבקש הנחה נוספת בהתאם למצב הכלכלי";
+  const discountFormFileUrl = "./discount-request.pdf";
   const groupYearMap = {
     "קבוצה תשפ\"ז": { before: "תשפ״ו", after: null },
     "קבוצה תשפ\"ו": { before: "תשפ״ה", after: null },
@@ -52,12 +54,22 @@
           paragraphs: [
             "אנו שמחים לפתוח את הרישום לתוכנית תלמידי התמימים לשנת הלימודים תשפ\"ז.",
             "בטופס שלפניכם תוכלו למלא את כל פרטי ההרשמה. אנא הקפידו למלא את כל השדות בצורה מדויקת ומלאה, כדי שנוכל לטפל בבקשתכם בצורה הטובה ביותר.",
-            "טופס ההרשמה כולל מספר שלבים ודורש פרטים רבים. מומלץ להצטייד מראש בכל המידע והמסמכים הנדרשים לפני תחילת המילוי.",
+            "טופס ההרשמה כולל מספר שלבים ודורש פרטים רבים של הבחור וכן של ההורים.",
             "הפרטים נשמרים אוטומטית כטיוטה באותו דפדפן ובאותו מכשיר, וניתן גם ללחוץ על \"שמור טיוטה\" לאישור ידני. מטעמי אבטחת דפדפן, קבצים מצורפים אינם נשמרים בטיוטה ויש לצרף אותם מחדש אם חוזרים לטופס מאוחר יותר.",
             "בסיום מילוי הטופס תתבקשו לשלם דמי הרשמה בסך 10 דולר. ההרשמה תושלם רק לאחר ביצוע התשלום וקבלת אישור על שליחת הטופס.",
-            "בהצלחה רבה ומופלגה"
+            "בהצלחה רבה ומופלגה."
           ],
-          signature: ["צוות מכון חנה", "תוכנית תלמידי התמימים – תשפ\"ז"]
+          contactBox: {
+            title: "לשאלות ועזרה במילוי הטופס ניתן לפנות למזכירות",
+            intro: "בימים א'-ה', משעה 19:00 ועד לשעה 21:00.",
+            items: [
+              "טלפון: 03-7223149 שלוחה 1",
+              "טלפון נוסף: 18647770770+",
+              "דוא\"ל: reception@kvutze.org",
+              "וואצאפ: 18647770770"
+            ]
+          },
+          signature: ["יחי אדוננו מורנו ורבינו מלך המשיח לעולם ועד"]
         }
       ]
     },
@@ -343,7 +355,7 @@
         },
         {
           id: "prior_f1_visa_during_group",
-          label: "האם הייתה ברשותך ויזת סטודנט (F-1) במהלך לימודיך בקבוצה?",
+          label: "האם הייתה ברשותך ויזת סטודנט במהלך לימודיך בקבוצה?",
           type: "radio",
           options: ["כן", "לא"],
           required: true,
@@ -490,10 +502,20 @@
           showWhen: { field: "parents_live_together", equals: "לא" }
         },
         { id: "parents_address_section", type: "section", label: "כתובת מגורי ההורים" },
-        { id: "parents_street", label: "רחוב ומספר בית", type: "text", required: true, autocomplete: "street-address", layout: "full" },
-        { id: "parents_city", label: "עיר", type: "text", required: true, autocomplete: "address-level2" },
-        { id: "parents_state", label: "מדינה", type: "text", required: true, autocomplete: "address-level1" },
-        { id: "parents_zip", label: "מיקוד", type: "text", required: true, autocomplete: "postal-code" }
+        { id: "parents_street", label: "רחוב ומספר בית", type: "text", required: true, autocomplete: "street-address", layout: "full", showWhen: { field: "parents_live_together", equals: "כן" } },
+        { id: "parents_city", label: "עיר", type: "text", required: true, autocomplete: "address-level2", showWhen: { field: "parents_live_together", equals: "כן" } },
+        { id: "parents_state", label: "מדינה", type: "text", required: true, autocomplete: "address-level1", showWhen: { field: "parents_live_together", equals: "כן" } },
+        { id: "parents_zip", label: "מיקוד", type: "text", required: true, autocomplete: "postal-code", showWhen: { field: "parents_live_together", equals: "כן" } },
+        { id: "father_address_section", type: "section", label: "כתובת מגורי האב", inlineToggle: { fieldId: "father_address_not_relevant", label: "לא רלוונטי" }, showWhen: { field: "parents_live_together", equals: "לא" } },
+        { id: "father_street", label: "רחוב ומספר בית", type: "text", required: true, autocomplete: "street-address", layout: "full", showWhen: { field: "parents_live_together", equals: "לא" }, disabledWhen: { field: "father_address_not_relevant", equals: true } },
+        { id: "father_city", label: "עיר", type: "text", required: true, autocomplete: "address-level2", showWhen: { field: "parents_live_together", equals: "לא" }, disabledWhen: { field: "father_address_not_relevant", equals: true } },
+        { id: "father_state", label: "מדינה", type: "text", required: true, autocomplete: "address-level1", showWhen: { field: "parents_live_together", equals: "לא" }, disabledWhen: { field: "father_address_not_relevant", equals: true } },
+        { id: "father_zip", label: "מיקוד", type: "text", required: true, autocomplete: "postal-code", showWhen: { field: "parents_live_together", equals: "לא" }, disabledWhen: { field: "father_address_not_relevant", equals: true } },
+        { id: "mother_address_section", type: "section", label: "כתובת מגורי האם", inlineToggle: { fieldId: "mother_address_not_relevant", label: "לא רלוונטי" }, showWhen: { field: "parents_live_together", equals: "לא" } },
+        { id: "mother_street", label: "רחוב ומספר בית", type: "text", required: true, autocomplete: "street-address", layout: "full", showWhen: { field: "parents_live_together", equals: "לא" }, disabledWhen: { field: "mother_address_not_relevant", equals: true } },
+        { id: "mother_city", label: "עיר", type: "text", required: true, autocomplete: "address-level2", showWhen: { field: "parents_live_together", equals: "לא" }, disabledWhen: { field: "mother_address_not_relevant", equals: true } },
+        { id: "mother_state", label: "מדינה", type: "text", required: true, autocomplete: "address-level1", showWhen: { field: "parents_live_together", equals: "לא" }, disabledWhen: { field: "mother_address_not_relevant", equals: true } },
+        { id: "mother_zip", label: "מיקוד", type: "text", required: true, autocomplete: "postal-code", showWhen: { field: "parents_live_together", equals: "לא" }, disabledWhen: { field: "mother_address_not_relevant", equals: true } }
       ]
     },
     {
@@ -505,16 +527,16 @@
           type: "intro_text",
           title: "שכר לימוד",
           paragraphs: () => [
-            "עלות החזקת תלמיד בישיבה עומדת על 720 דולר לחודש.",
-            "סכום זה משקף את העלויות הכרוכות בהפעלת המסגרת, ובכלל זה הפעלת הפנימיות, שכירת מקומות לינה, צוות הישיבה והוצאות נוספות לאורך כל שנת הלימודים.",
-            "שנת הלימודים של תוכנית תלמידי התמימים – תשפ\"ז נמשכת 14.5 חודשי לימוד (מט\"ו אלול תשפ\"ו ועד ז' במרחשון תשפ\"ח), ולכן שכר הלימוד הכולל מחושב בהתאם לתקופה זו.",
-            "אמצעי התשלום הרגיל הוא כרטיס אשראי, המחויב באופן אוטומטי בהתאם ללוח התשלומים. ניתן לשלם גם באמצעות צ'קים (בישראל), בתיאום מראש ובמסירת כל הצ'קים מראש."
+            `עלות החזקת תלמיד בישיבה עומדת על ${tuitionAmounts().full} דולר לחודש.`,
+            "סכום זה משקף את העלויות הכרוכות בהפעלת המסגרת, ובכלל זה הפעלת הפנימיות, שכירת מקומות לינה, צוות והוצאות נוספות לאורך כל שנת הלימודים.",
+            tuitionPeriodText(),
+            "אמצעי התשלום הרגיל הוא כרטיס אשראי, המחויב באופן אוטומטי בהתאם ללוח התשלומים. ניתן לשלם גם באמצעות צ'קים, בתיאום מראש ובמסירת כל הצ'קים מראש."
           ],
           sections: [
             {
               title: "לוח התשלומים",
               items: [
-                "עם השלמת הרישום ייגבה התשלום הראשון, בגובה חצי חודש לימודים.",
+                "עם השלמת הרישום ייגבה יחד עם הפקדון גם התשלום הראשון, בגובה חצי חודש לימודים.",
                 "התשלום השני ייגבה ביום 1 בספטמבר 2026.",
                 "לאחר מכן ייגבה תשלום באופן אוטומטי ב-1 לכל חודש לועזי.",
                 "התשלום האחרון ייגבה ביום 1 באוקטובר 2027."
@@ -534,113 +556,28 @@
           id: "discount_request_type",
           label: "באפשרותכם לבחור אחת מהאפשרויות הבאות:",
           type: "radio",
-          options: () => [
-            "עלות בחור מליאה - 720 דולר לחודש.",
-            `אני מבקש את ההנחה הבסיסית – שכר לימוד של ${tuitionAmounts().discounted} דולר לחודש, ללא צורך בהגשת מסמכים.`,
-            "אני מבקש הנחה נוספת בהתאם למצב הכלכלי, ואמלא את טופס בקשת ההנחה."
-          ],
+          options: tuitionDiscountOptions,
           required: true,
           relaxed: true
         },
         {
           id: "discount_form_section",
-          type: "section",
-          label: "טופס בקשת הנחה",
-          showWhen: { field: "discount_request_type", equals: "אני מבקש הנחה נוספת בהתאם למצב הכלכלי, ואמלא את טופס בקשת ההנחה." }
-        },
-        {
-          id: "family_children_count",
-          label: "מספר הילדים במשפחה",
-          type: "number",
-          required: true,
-          layout: "wide",
-          showWhen: { field: "discount_request_type", equals: "אני מבקש הנחה נוספת בהתאם למצב הכלכלי, ואמלא את טופס בקשת ההנחה." }
-        },
-        {
-          id: "children_with_tuition_count",
-          label: "כמה מהילדים לומדים כיום במוסדות שבהם אתם משלמים שכר לימוד?",
-          type: "number",
-          required: true,
-          layout: "wide",
-          hint: "כגון: ישיבה קטנה, ישיבה גדולה, סמינר, פנימייה או מוסד אחר הכרוך בתשלום.",
-          showWhen: { field: "discount_request_type", equals: "אני מבקש הנחה נוספת בהתאם למצב הכלכלי, ואמלא את טופס בקשת ההנחה." }
-        },
-        {
-          id: "father_occupation",
-          label: "עיסוק האב",
-          type: "text",
-          required: true,
-          showWhen: { field: "discount_request_type", equals: "אני מבקש הנחה נוספת בהתאם למצב הכלכלי, ואמלא את טופס בקשת ההנחה." }
-        },
-        {
-          id: "mother_occupation",
-          label: "עיסוק האם",
-          type: "text",
-          required: true,
-          showWhen: { field: "discount_request_type", equals: "אני מבקש הנחה נוספת בהתאם למצב הכלכלי, ואמלא את טופס בקשת ההנחה." }
-        },
-        {
-          id: "last_year_tuition_ils",
-          label: "כמה שכר לימוד שילמתם בשנה שעברה? (שקל לחודש)",
-          type: "number",
-          required: true,
-          showWhen: { field: "discount_request_type", equals: "אני מבקש הנחה נוספת בהתאם למצב הכלכלי, ואמלא את טופס בקשת ההנחה." }
-        },
-        {
-          id: "discount_circumstances",
-          label: "האם קיימות נסיבות כלכליות מיוחדות שחשוב שוועדת ההנחות תביא בחשבון?",
-          type: "checkbox_group",
-          options: ["שכירות או משכנתא גבוהה", "הוצאות רפואיות חריגות", "ילדים הלומדים מחוץ לבית", "חובות או התחייבויות כספיות משמעותיות", "אחר"],
-          hint: "ניתן לסמן יותר מאפשרות אחת.",
-          inlineOtherField: {
-            option: "אחר",
-            fieldId: "discount_circumstances_other",
-            placeholder: "פירוט נסיבות אחרות"
-          },
-          showWhen: { field: "discount_request_type", equals: "אני מבקש הנחה נוספת בהתאם למצב הכלכלי, ואמלא את טופס בקשת ההנחה." }
-        },
-        {
-          id: "discount_reason",
-          label: "אנא פרטו בקצרה את הנסיבות שבגינן אתם מבקשים הנחה בשכר הלימוד.",
-          type: "textarea",
-          required: true,
-          showWhen: { field: "discount_request_type", equals: "אני מבקש הנחה נוספת בהתאם למצב הכלכלי, ואמלא את טופס בקשת ההנחה." }
-        },
-        {
-          id: "requested_monthly_tuition_usd",
-          label: "מהו סכום שכר הלימוד החודשי שלדעתכם תוכלו לעמוד בו השנה? (דולר לחודש)",
-          type: "number",
-          required: true,
-          showWhen: { field: "discount_request_type", equals: "אני מבקש הנחה נוספת בהתאם למצב הכלכלי, ואמלא את טופס בקשת ההנחה." }
-        },
-        {
-          id: "discount_documents_note",
           type: "intro_text",
-          title: "צירוף מסמכים",
+          title: "בקשת הנחה",
           paragraphs: [
-            "ניתן לצרף מסמכים התומכים בבקשתכם. צירוף מסמכים אינו חובה, אולם הוא עשוי לסייע לוועדת ההנחות להבין טוב יותר את מצבכם הכלכלי ולבחון את בקשתכם בצורה מדויקת יותר."
+            "יש להוריד את קובץ בקשת ההנחה ולמלא אותו בנפרד."
           ],
-          sections: [
+          discountPreview: true,
+          links: [
             {
-              title: "מסמכים שניתן לצרף (רשות)",
-              items: [
-                "תלושי שכר.",
-                "אישור הכנסות.",
-                "מסמכים המעידים על הוצאות חריגות.",
-                "כל מסמך אחר שלדעתכם עשוי לסייע לוועדת ההנחות."
-              ]
+              label: "הורד את קובץ בקשת ההנחה",
+              url: discountFormFileUrl,
+              download: true
             }
           ],
-          note: "גובה ההנחה נקבע על ידי ועדת ההנחות בלבד, לאחר בחינת כלל הנתונים והמסמכים שהוגשו. הוועדה מתכנסת מדי יום ראשון, ולאחר קבלת ההחלטה תישלח אליכם הודעה על גובה ההנחה שאושרה.",
+          note: "את בקשת ההנחה יש לשלוח לכתובת: cherut@kvutze.org",
           signature: [],
-          showWhen: { field: "discount_request_type", equals: "אני מבקש הנחה נוספת בהתאם למצב הכלכלי, ואמלא את טופס בקשת ההנחה." }
-        },
-        {
-          id: "discount_documents",
-          label: "צירוף מסמכים לבקשת ההנחה (רשות)",
-          type: "file",
-          multiple: true,
-          showWhen: { field: "discount_request_type", equals: "אני מבקש הנחה נוספת בהתאם למצב הכלכלי, ואמלא את טופס בקשת ההנחה." }
+          showWhen: { field: "discount_request_type", equals: additionalDiscountOption }
         }
       ]
     },
@@ -653,16 +590,16 @@
           type: "intro_text",
           title: "פיקדון",
           paragraphs: [
-            "לצד התשלומים, על כל תלמיד להפקיד פקדון על סך 700$ לפני תחילת השהות. הפקדון נועד להבטיח את שמירת הכללים ואת העמידה בתנאי התשלום.",
+            "בסיום תהליך הרישום - יחד עם התשלום הראשוני [בגובה חצי חודש] - על כל תלמיד להפקיד פקדון על סך 300$ לפני תחילת השהות. הפקדון נועד להבטיח את שמירת הכללים ואת העמידה בתנאי התשלום, וניתן להפקידו בכרטיס אשראי בצ'ק או בהעברה בנקאית.",
             "חשוב להבהיר כי אנו גובים את הפקדון והוא נשמר אצלנו לאורך כל התקופה.",
             "עם תום השהות יוחזר הפקדון — באותו אופן שבו שולם, ותוך 30 יום ממועד היציאה — לאחר יציאה מוחלטת מהפנימייה, לרבות פינוי כל החפצים האישיים. זאת, אלא אם מצאה ההנהלה עילה להפחתתו.",
-            "שימו לב: הרישום יושלם רק לאחר חתימת חוזה התשלום והפקדת הפיקדון."
+            "שימו לב: הרישום יושלם רק לאחר חתימת חוזה התשלום והתשלום הראשוני."
           ],
           signature: []
         },
         {
           id: "deposit_terms_accepted",
-          label: "אני מאשר כי קראתי והבנתי את תנאי הפיקדון, ואני מסכים להפקיד פיקדון בסך 700 דולר בהתאם לתנאים המפורטים לעיל.",
+          label: "אני מאשר כי קראתי והבנתי את תנאי הפיקדון, ואני מסכים להפקיד פיקדון בסך 300 דולר בהתאם לתנאים המפורטים לעיל.",
           type: "checkbox",
           agreement: true,
           required: true,
@@ -735,12 +672,12 @@
                 paragraphs: ["המטבח מיועד לשימוש אישי בלבד. יש לשמור על ניקיונו ולהשתמש בו בהתאם להוראות הפנימייה. אין לבשל מחוץ למטבח, ואין לבשל לאחר השעה 23:00."]
               },
               {
-                title: "5. שמירה על השכנים",
+                title: "5. יחס לסביבה",
                 paragraphs: ["חל איסור להרעיש או להפריע לשכנים בכל צורה שהיא. יש להימנע מכל התנהגות העלולה לגרום לבעיות מול השכנים או מול הרשויות."]
               },
               {
                 title: "6. אורחים",
-                paragraphs: ["אין להלין אורחים בפנימייה ללא אישור מפורש מהנהלת הישיבה."]
+                paragraphs: ["אין להלין אורחים בפנימייה ללא אישור מפורש מהנהלת הישיבה – הפרת כלל זה תגרור קנס של 120 דולר לחברי החדר."]
               },
               {
                 title: "7. עישון",
@@ -795,7 +732,7 @@
         },
         {
           id: "dormitory_commitment_restrictions",
-          label: "אני מתחייב שלא להלין אורחים בפנימייה, שלא לעשן בתחומי הפנימייה, ולהשתמש במכשירים אלקטרוניים בהתאם לנהלי הישיבה בלבד.",
+          label: "אני מתחייב שלא להלין אורחים בפנימייה ללא אישור מפורש מהנהלת הישיבה, שלא לעשן בתחומי הפנימייה, ולהשתמש במכשירים אלקטרוניים בהתאם לנהלי הישיבה בלבד. ידוע לי כי הפרת כלל הלנת אורחים תגרור קנס של 120 דולר לחברי החדר.",
           type: "checkbox",
           agreement: true,
           required: true,
@@ -843,8 +780,8 @@
         { id: "emergency_phone", label: "מספר טלפון של איש קשר חירום", type: "tel", required: true },
         { id: "emergency_relation", label: "קרבה לתלמיד", type: "text", required: true },
         { id: "medical_measurements_section", type: "section", label: "נתונים רפואיים כלליים" },
-        { id: "weight", label: "משקל בקילו", type: "text" },
-        { id: "height", label: "גובה", type: "text" },
+        { id: "weight", label: "משקל", type: "text", unit: 'ק"ג' },
+        { id: "height", label: "גובה", type: "text", unit: 'ס"מ' },
         { id: "last_tetanus_date", label: "תאריך חיסון טטנוס אחרון", type: "date" },
         { id: "allergies_section", type: "section", label: "אלרגיות ורגישויות" },
         {
@@ -1130,9 +1067,11 @@
             {
               title: "בכל שאלה ניתן לפנות למזכירות",
               items: [
-                "דוא\"ל: ____________",
-                "טלפון: ____________",
-                "WhatsApp: ____________"
+                "בימים א'-ה', משעה 19:00 ועד לשעה 21:00.",
+                "טלפון: 03-7223149 שלוחה 1",
+                "טלפון נוסף: 18647770770+",
+                "דוא\"ל: reception@kvutze.org",
+                "וואצאפ: 18647770770"
               ]
             }
           ]
@@ -1263,7 +1202,24 @@
       const wrapper = document.createElement("div");
       if (field.type === "section") {
         wrapper.className = "field-section";
-        wrapper.textContent = field.label;
+        if (field.inlineToggle) {
+          wrapper.classList.add("field-section-with-toggle");
+          const title = document.createElement("span");
+          title.textContent = field.label;
+          const toggleLabel = document.createElement("label");
+          toggleLabel.className = "section-inline-toggle";
+          const toggleInput = document.createElement("input");
+          toggleInput.type = "checkbox";
+          toggleInput.id = field.inlineToggle.fieldId;
+          toggleInput.checked = Boolean(state.values[field.inlineToggle.fieldId]);
+          toggleInput.addEventListener("change", onInput);
+          toggleLabel.appendChild(toggleInput);
+          toggleLabel.appendChild(document.createTextNode(field.inlineToggle.label));
+          wrapper.appendChild(title);
+          wrapper.appendChild(toggleLabel);
+        } else {
+          wrapper.textContent = field.label;
+        }
         formFields.appendChild(wrapper);
         return;
       }
@@ -1273,6 +1229,9 @@
         wrapper.innerHTML = `
           <h3>${escapeHtml(field.title)}</h3>
           ${resolveList(field.paragraphs).map((paragraph) => `<p>${escapeHtml(paragraph)}</p>`).join("")}
+          ${field.contactBox ? renderContactBox(field.contactBox) : ""}
+          ${field.discountPreview ? renderDiscountPreview() : ""}
+          ${field.links?.length ? `<div class="intro-links">${field.links.map((link) => `<a href="${escapeHtml(link.url)}" ${link.download ? "download" : 'target="_blank" rel="noopener noreferrer"'}>${escapeHtml(link.label)}</a>`).join("")}</div>` : ""}
           ${
             resolveList(field.sections).length
               ? resolveList(field.sections)
@@ -1452,6 +1411,16 @@
     if (field.defaultValue && state.values[field.id] === undefined) state.values[field.id] = field.defaultValue;
     input.value = state.values[field.id] || field.defaultValue || "";
     input.addEventListener("input", onInput);
+    if (field.unit) {
+      const inputWrap = document.createElement("div");
+      inputWrap.className = "input-with-unit";
+      const unit = document.createElement("span");
+      unit.className = "input-unit";
+      unit.textContent = field.unit;
+      inputWrap.appendChild(input);
+      inputWrap.appendChild(unit);
+      return inputWrap;
+    }
     return input;
   }
 
@@ -1584,11 +1553,100 @@
     `;
   }
 
+  function renderContactBox(contactBox) {
+    return `
+      <div class="intro-contact-box">
+        <h4>${escapeHtml(contactBox.title)}</h4>
+        ${contactBox.intro ? `<p>${escapeHtml(contactBox.intro)}</p>` : ""}
+        <ul>
+          ${resolveList(contactBox.items).map((item) => `<li>${escapeHtml(item)}</li>`).join("")}
+        </ul>
+      </div>
+    `;
+  }
+
+  function renderDiscountPreview() {
+    return `
+      <div class="discount-preview" aria-label="תצוגת טופס בקשת הנחה">
+        <h4>טופס בקשת הנחה לשכר לימוד - תשפ"ז</h4>
+        <p>בקשות ההנחה נבחנות על ידי ועדת ההנחות בהתאם לנתונים ולמסמכים שיוגשו, ומתוך משאבי קרן חירות, הממומנת מכספי הקדש ותרומות. לפיכך, יש למלא את הטופס במדויק ולבקש הנחה בהתאם לצורך האמיתי בלבד.</p>
+        <p>כלל הנתונים והמסמכים המוגשים יישמרו בסודיות מלאה, וישמשו את ועדת ההנחות בלבד. הוועדה מתכנסת מדי יום ראשון. לאחר קבלת ההחלטה תישלח אליכם הודעה על גובה ההנחה שאושרה.</p>
+        <p>ניתן לצרף מסמכים התומכים בבקשתכם. צירוף מסמכים אינו חובה, אולם הוא עשוי לסייע לוועדת ההנחות להבין טוב יותר את מצבכם הכלכלי ולבחון את בקשתכם בצורה מדויקת יותר.</p>
+        <p><strong>את הטופס והמסמכים הנלווים יש לשלוח לכתובת: cherut@kvutze.org</strong></p>
+
+        <div class="discount-preview-grid">
+          <span>שם התלמיד: _________________________________</span>
+          <span>מקום לימוד בישי"ג: ________________</span>
+          <span>מספר תעודת זהות: ___________________________</span>
+          <span>אזרחות: __________________________</span>
+          <span>שם האב: ___________________________</span>
+          <span>עיסוק האב: ______________________________</span>
+          <span class="discount-preview-fill">סה"כ הכנסות האב לחודש:<i></i></span>
+          <span>שם האם: ___________________________</span>
+          <span>עיסוק האם: ______________________________</span>
+          <span class="discount-preview-fill">סה"כ הכנסות האם לחודש:<i></i></span>
+          <span>מספר ילדים במשפחה - לא נשואים: _______________________</span>
+          <span>נשואים: __________________</span>
+        </div>
+
+        <p class="discount-preview-note">* יש לפרט את כל מקורות ההכנסה כולל קצבאות, תמיכות קבועות, וכל הכנסה קבועה אחרת.</p>
+
+        <h5>ילדים הלומדים כיום במוסדות שבהם משלמים שכר לימוד</h5>
+        <p class="discount-preview-note">כגון: ישי"ק, ישי"ג, סמינר, או מוסד אחר.</p>
+        <div class="discount-preview-children">
+          ${Array.from({ length: 3 }).map(() => `
+            <div class="discount-preview-child">
+              <span class="discount-preview-fill">שם הילד:<i></i></span>
+              <span class="discount-preview-fill">מוסד הלימודים:<i></i></span>
+              <span class="discount-preview-fill">שכ"ל לחודש:<i></i></span>
+            </div>
+          `).join("")}
+        </div>
+
+        <div class="discount-preview-lines">
+          <p class="discount-preview-fill">כמה שכר לימוד לחודש שילמתם בשנה שעברה עבור הבחור (בשקל):<i></i></p>
+          <p class="discount-preview-fill">כמה שכר לימוד לחודש אתם חושבים שיכולתכם לשלם השנה (בדולר):<i></i></p>
+          <p>פרטו את הנסיבות שבגינן אתם מבקשים הנחה בשכר הלימוד:</p>
+          <p class="discount-preview-fill discount-preview-fill-wide"><i></i></p>
+          <p class="discount-preview-fill discount-preview-fill-wide"><i></i></p>
+          <p class="discount-preview-fill discount-preview-fill-wide"><i></i></p>
+        </div>
+      </div>
+    `;
+  }
+
   function tuitionAmounts() {
-    if (state.values.student_visa_needed !== "כן") return { full: 550, discounted: 300 };
-    return (state.values.student_group_year || defaultGroupYear) === defaultGroupYear
-      ? { full: 700, discounted: 450 }
-      : { full: 700, discounted: 400 };
+    const groupYear = state.values.student_group_year || defaultGroupYear;
+    if (groupYear !== defaultGroupYear) return { full: 400, discounted: null };
+    if (state.values.student_visa_needed !== "כן") return { full: 570, discounted: 300 };
+    return { full: 720, discounted: 450 };
+  }
+
+  function tuitionMonthsLabel() {
+    return (state.values.student_group_year || defaultGroupYear) === "קבוצה תשפ\"ו" ? "12" : "14.5";
+  }
+
+  function tuitionPeriodText() {
+    if ((state.values.student_group_year || defaultGroupYear) === "קבוצה תשפ\"ו") {
+      return "שכר הלימוד מחושב על פי תקופה של 12 חודשים (מז' חשון תשפ\"ז ועד ז' בחשון תשפ\"ח), ולכן שכר הלימוד מחושב בהתאם לתקופה זו.";
+    }
+    return "שכר הלימוד מחושב על פני תקופה של 14.5 חודשים (מט\"ו אלול תשפ\"ו ועד ז' בחשון תשפ\"ח), ולכן שכר הלימוד הכולל מחושב בהתאם לתקופה זו.";
+  }
+
+  function tuitionDiscountOptions() {
+    const amounts = tuitionAmounts();
+    const months = tuitionMonthsLabel();
+    const fullOption =
+      (state.values.student_group_year || defaultGroupYear) === defaultGroupYear
+        ? `עלות בחור מליאה - ${amounts.full} דולר לחודש (כפול ${months} חודשים).`
+        : `${amounts.full} דולר לחודש (כפול ${months} חודשים).`;
+    const additionalDiscount = additionalDiscountOption;
+    if (amounts.discounted == null) return [fullOption, additionalDiscount];
+    return [
+      fullOption,
+      `אני מבקש את ההנחה הבסיסית – שכר לימוד של ${amounts.discounted} דולר לחודש (כפול ${months} חודשים).`,
+      additionalDiscount
+    ];
   }
 
   function createSignatureInput(field) {
@@ -1993,6 +2051,7 @@
     step.fields.forEach((field) => {
       if (!isVisible(field)) return;
       const value = state.values[field.id];
+      if (isDisabled(field)) return;
 
       if (!DEV_SKIP_REQUIRED_VALIDATION && field.required && isEmpty(value) && !hasFileValue(state.files[field.id])) {
         setError(field.id, "שדה חובה");
@@ -2294,20 +2353,22 @@
       parents_city: values.parents_city || null,
       parents_state: values.parents_state || null,
       parents_zip: values.parents_zip || null,
+      father_address_not_relevant: Boolean(values.father_address_not_relevant),
+      father_street: values.father_address_not_relevant ? null : values.father_street || null,
+      father_city: values.father_address_not_relevant ? null : values.father_city || null,
+      father_state: values.father_address_not_relevant ? null : values.father_state || null,
+      father_zip: values.father_address_not_relevant ? null : values.father_zip || null,
+      mother_address_not_relevant: Boolean(values.mother_address_not_relevant),
+      mother_street: values.mother_address_not_relevant ? null : values.mother_street || null,
+      mother_city: values.mother_address_not_relevant ? null : values.mother_city || null,
+      mother_state: values.mother_address_not_relevant ? null : values.mother_state || null,
+      mother_zip: values.mother_address_not_relevant ? null : values.mother_zip || null,
       parent_response_email: responseEmail,
       registration_payment_status: values.registration_payment_status || null,
       registration_payment_session_id: values.registration_payment_session_id || null,
       registration_payment_amount_usd: values.registration_payment_amount_usd || 10,
       registration_payment_paid_at: values.registration_payment_paid_at || null,
       discount_request_type: values.discount_request_type || null,
-      family_children_count: values.family_children_count || null,
-      children_with_tuition_count: values.children_with_tuition_count || null,
-      father_occupation: values.father_occupation || null,
-      mother_occupation: values.mother_occupation || null,
-      last_year_tuition_ils: values.last_year_tuition_ils || null,
-      discount_circumstances: discountCircumstancesValues(),
-      discount_reason: values.discount_reason || null,
-      requested_monthly_tuition_usd: values.requested_monthly_tuition_usd || null,
       deposit_terms_accepted: Boolean(values.deposit_terms_accepted),
       dormitory_rules_accepted: Boolean(values.dormitory_rules_accepted),
       dormitory_commitment_presence: Boolean(values.dormitory_commitment_presence),
@@ -2500,7 +2561,9 @@
       ["טלפון האם", state.values.mother_phone],
       ["אימייל האם", state.values.mother_email],
       ["האם ההורים גרים יחד", parentsLiveTogetherValue()],
-      ["כתובת", compactJoin([state.values.parents_street, state.values.parents_city, state.values.parents_state, state.values.parents_zip])]
+      ["כתובת משותפת", compactJoin([state.values.parents_street, state.values.parents_city, state.values.parents_state, state.values.parents_zip])],
+      ["כתובת האב", state.values.father_address_not_relevant ? "לא רלוונטי" : compactJoin([state.values.father_street, state.values.father_city, state.values.father_state, state.values.father_zip])],
+      ["כתובת האם", state.values.mother_address_not_relevant ? "לא רלוונטי" : compactJoin([state.values.mother_street, state.values.mother_city, state.values.mother_state, state.values.mother_zip])]
     ];
   }
 
@@ -2528,17 +2591,8 @@
     const rows = [
       ["מסלול התשלום שנבחר", tuitionPlanReviewValue()]
     ];
-    if (state.values.discount_request_type === "אני מבקש הנחה נוספת בהתאם למצב הכלכלי, ואמלא את טופס בקשת ההנחה.") {
-      rows.push(
-        ["מספר הילדים במשפחה", state.values.family_children_count],
-        ["ילדים במוסדות בתשלום", state.values.children_with_tuition_count],
-        ["עיסוק האב", state.values.father_occupation],
-        ["עיסוק האם", state.values.mother_occupation],
-        ["שכר לימוד בשנה שעברה", formatCurrencyAmount(state.values.last_year_tuition_ils, "שקל")],
-        ["נסיבות כלכליות", discountCircumstancesValues().join(", ")],
-        ["נימוק לבקשת ההנחה", state.values.discount_reason],
-        ["סכום שכר לימוד מבוקש", formatCurrencyAmount(state.values.requested_monthly_tuition_usd, "דולר")]
-      );
+    if (state.values.discount_request_type === additionalDiscountOption) {
+      rows.push(["בקשת הנחה", "יש לשלוח את קובץ בקשת ההנחה לכתובת cherut@kvutze.org"]);
     }
     return rows;
   }
@@ -2546,8 +2600,10 @@
   function tuitionPlanReviewValue() {
     const selected = state.values.discount_request_type || "";
     if (!selected) return "";
-    if (selected.startsWith("עלות בחור מליאה")) return "720 דולר לחודש";
-    return "הוגשה בקשת הנחה";
+    if (selected === additionalDiscountOption) return "אני מבקש הנחה נוספת ואשלח טופס באימייל.";
+    const amountMatch = selected.match(/(\d+\s+דולר לחודש(?:\s+\(כפול\s+[^)]+\))?)/);
+    if (amountMatch) return amountMatch[1].replace(/\.$/, "");
+    return selected;
   }
 
   function healthReviewRows() {
@@ -2664,6 +2720,51 @@
     ) {
       syncYeshivaYears();
     }
+
+    if (changedField === "parents_live_together") {
+      clearParentAddressFields();
+    }
+
+    if (changedField === "father_address_not_relevant" && state.values.father_address_not_relevant) {
+      clearFatherAddressFields();
+    }
+
+    if (changedField === "mother_address_not_relevant" && state.values.mother_address_not_relevant) {
+      clearMotherAddressFields();
+    }
+  }
+
+  function clearParentAddressFields() {
+    [
+      "parents_street",
+      "parents_city",
+      "parents_state",
+      "parents_zip",
+      "father_address_not_relevant",
+      "father_street",
+      "father_city",
+      "father_state",
+      "father_zip",
+      "mother_address_not_relevant",
+      "mother_street",
+      "mother_city",
+      "mother_state",
+      "mother_zip"
+    ].forEach((fieldId) => {
+      state.values[fieldId] = fieldId.endsWith("_not_relevant") ? false : "";
+    });
+  }
+
+  function clearFatherAddressFields() {
+    ["father_street", "father_city", "father_state", "father_zip"].forEach((fieldId) => {
+      state.values[fieldId] = "";
+    });
+  }
+
+  function clearMotherAddressFields() {
+    ["mother_street", "mother_city", "mother_state", "mother_zip"].forEach((fieldId) => {
+      state.values[fieldId] = "";
+    });
   }
 
   function syncYeshivaYears() {

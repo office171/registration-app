@@ -653,6 +653,13 @@ textarea:focus {
   font-weight: 700;
 }
 
+.payment-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
 .payment-button {
   justify-self: start;
   min-height: 44px;
@@ -674,6 +681,70 @@ textarea:focus {
   border: 1px solid #a8b9b2;
   background: #ffffff;
   color: var(--primary-dark);
+}
+
+.compact-payment-button {
+  min-height: 40px;
+  padding: 9px 14px;
+  font-weight: 700;
+}
+
+.already-paid-box {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid #d8e1dd;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.already-paid-box.is-active {
+  border-color: var(--accent);
+  background: #f4faf7;
+}
+
+.already-paid-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.already-paid-header div {
+  display: grid;
+  gap: 4px;
+}
+
+.already-paid-header strong {
+  color: var(--primary-dark);
+}
+
+.already-paid-header span {
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.already-paid-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.already-paid-fields label {
+  display: grid;
+  gap: 5px;
+  color: var(--primary-dark);
+  font-weight: 700;
+}
+
+.already-paid-fields input {
+  width: 100%;
+  min-height: 42px;
+  border: 1px solid #c6d0cc;
+  border-radius: 6px;
+  padding: 9px 10px;
+  font: inherit;
+  background: #fff;
 }
 
 .signature-pad {
@@ -950,6 +1021,20 @@ button {
   .discount-preview-child {
     grid-template-columns: 1fr;
     gap: 7px;
+  }
+
+  .already-paid-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .already-paid-header .payment-button {
+    justify-self: stretch;
+    width: 100%;
+  }
+
+  .already-paid-fields {
+    grid-template-columns: 1fr;
   }
 
   .field.pair {

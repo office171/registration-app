@@ -2217,6 +2217,11 @@
         valid = false;
       }
 
+      if (!DEV_SKIP_REQUIRED_VALIDATION && field.type === "checkbox" && field.required && value !== true) {
+        setError(field.id, "יש לסמן אישור לפני המשך");
+        valid = false;
+      }
+
       if (!DEV_SKIP_REQUIRED_VALIDATION && field.type === "signature" && field.required && !state.values[field.id]) {
         setError(field.id, "יש לחתום לפני המשך");
         valid = false;

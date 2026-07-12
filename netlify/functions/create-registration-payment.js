@@ -21,6 +21,8 @@ exports.handler = async (event) => {
   const origin = allowedOrigin(event);
   const studentEmail = String(body.studentEmail || "").trim();
   const studentName = String(body.studentName || "").trim();
+  const birthDate = String(body.birthDate || "").trim();
+  const lastNameEn = normalizeLookupValue(body.lastNameEn || "");
 
   const params = new URLSearchParams();
   params.set("mode", "payment");
@@ -35,9 +37,13 @@ exports.handler = async (event) => {
   if (studentEmail) params.set("customer_email", studentEmail);
   if (studentName) params.set("metadata[student_name]", studentName);
   if (studentEmail) params.set("metadata[student_email]", studentEmail);
+  if (birthDate) params.set("metadata[registration_birth_date]", birthDate);
+  if (lastNameEn) params.set("metadata[registration_last_name_en]", lastNameEn);
   params.set("payment_intent_data[metadata][kind]", "registration_fee");
   if (studentName) params.set("payment_intent_data[metadata][student_name]", studentName);
   if (studentEmail) params.set("payment_intent_data[metadata][student_email]", studentEmail);
+  if (birthDate) params.set("payment_intent_data[metadata][registration_birth_date]", birthDate);
+  if (lastNameEn) params.set("payment_intent_data[metadata][registration_last_name_en]", lastNameEn);
 
   const response = await fetch(STRIPE_CHECKOUT_URL, {
     method: "POST",
@@ -58,9 +64,15 @@ exports.handler = async (event) => {
 
 function allowedOrigin(event) {
   const origin = event.headers.origin || event.headers.Origin;
-  if (origin) return origin;
+  const allowed = (process.env.ALLOWED_SITE_ORIGIN || process.env.URL || "").replace(/\/$/, "");
+  if (allowed) return allowed;
+  if (origin && /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) return origin;
   if (process.env.URL) return process.env.URL;
   return "http://localhost:8888";
+}
+
+function normalizeLookupValue(value) {
+  return String(value || "").trim().toLowerCase().replace(/\s+/g, " ");
 }
 
 function json(statusCode, body) {
@@ -70,4 +82,3 @@ function json(statusCode, body) {
     body: JSON.stringify(body)
   };
 }
-

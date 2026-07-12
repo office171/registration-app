@@ -260,6 +260,8 @@
           id: "israeli_id_number",
           label: "מספר תעודת זהות ישראלית",
           type: "text",
+          required: true,
+          israeliId: true,
           layout: "pair",
           showWhen: { field: "citizenships", contains: "ישראל" }
         },
@@ -309,6 +311,7 @@
           id: "student_about",
           label: "ספר לנו קצת על עצמך",
           type: "textarea",
+          required: true,
           hint: "יש לפרט תחומי עניין מיוחדים, כישורים, ידע, יכולות, תחביבים או עיסוקים נוספים."
         }
       ]
@@ -2209,7 +2212,7 @@
       const value = state.values[field.id];
       if (isDisabled(field)) return;
 
-      if (!DEV_SKIP_REQUIRED_VALIDATION && field.required && isEmpty(value) && !hasFileValue(state.files[field.id])) {
+      if (!DEV_SKIP_REQUIRED_VALIDATION && field.type !== "payment" && field.required && isEmpty(value) && !hasFileValue(state.files[field.id])) {
         setError(field.id, "שדה חובה");
         valid = false;
       }
@@ -2231,6 +2234,11 @@
 
       if (field.emailOrNone && value && !isEmailOrNone(value)) {
         setError(field.id, "יש לכתוב כתובת אימייל תקינה או: אין לי");
+        valid = false;
+      }
+
+      if (field.israeliId && value && !isValidIsraeliId(value)) {
+        setError(field.id, "מספר תעודת הזהות אינו תקין");
         valid = false;
       }
 
@@ -2994,6 +3002,21 @@
     const normalized = String(value || "").trim();
     if (normalized === "אין לי") return true;
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized);
+  }
+
+  function isValidIsraeliId(value) {
+    const digits = String(value || "").replace(/\D/g, "");
+    if (!digits || digits.length > 9) return false;
+    const id = digits.padStart(9, "0");
+    let sum = 0;
+
+    for (let index = 0; index < id.length; index += 1) {
+      let digit = Number(id[index]) * ((index % 2) + 1);
+      if (digit > 9) digit -= 9;
+      sum += digit;
+    }
+
+    return sum % 10 === 0;
   }
 
   function isEmpty(value) {

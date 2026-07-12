@@ -1,7 +1,7 @@
 (function () {
   const STORAGE_KEY = "kvutze-registration-draft-v1";
-  const DEV_SKIP_REQUIRED_VALIDATION = true;
-  const DEV_SKIP_PAYMENT_VALIDATION = true;
+  const DEV_SKIP_REQUIRED_VALIDATION = false;
+  const DEV_SKIP_PAYMENT_VALIDATION = false;
   const config = window.APP_CONFIG || {};
   const formStartedAt = new Date().toISOString();
   try {
@@ -393,83 +393,7 @@
           hideWhenContains: { field: "citizenships", value: "ארה״ב" },
           showWhen: { field: "student_visa_needed", equals: "לא" }
         },
-        { id: "arrival_visa_other", label: "פירוט אשרה אחרת", type: "text", required: true, hideWhenContains: { field: "citizenships", value: "ארה״ב" }, showWhen: { field: "arrival_visa", equals: "אחר" } },
-        {
-          id: "student_visa_rules_section",
-          type: "section",
-          label: "כללי ויזת סטודנט",
-          hideWhenContains: { field: "citizenships", value: "ארה״ב" },
-          showWhen: { field: "student_visa_needed", equals: "כן" }
-        },
-        {
-          id: "student_visa_rule_i20",
-          label: "ידוע לי כי אישור הלימודים (טופס ה-I-20) מונפק על ידי מוסד הלימודים מכון חנה, וכי מטרת הגעתי לארצות הברית היא לצורך לימודים במוסד זה בלבד, ולא לכל מטרה אחרת.",
-          type: "checkbox",
-          agreement: true,
-          required: true,
-          layout: "wide",
-          hideWhenContains: { field: "citizenships", value: "ארה״ב" },
-          showWhen: { field: "student_visa_needed", equals: "כן" }
-        },
-        {
-          id: "student_visa_rule_attendance",
-          label: "ידוע לי כי קבלת מעמד הסטודנט והמשך שמירתו מותנים בהשתתפות סדירה ומלאה בכל תוכניות הלימוד, השיעורים והפעילויות הנדרשות על ידי המוסד. היעדרויות, אי-עמידה בדרישות הלימוד או אי-שמירה על נהלי המוסד עלולים להביא לפגיעה במעמד הסטודנט, לרבות ביטול אישור הלימודים, בהתאם לדין ולהוראות המוסד.",
-          type: "checkbox",
-          agreement: true,
-          required: true,
-          layout: "wide",
-          hideWhenContains: { field: "citizenships", value: "ארה״ב" },
-          showWhen: { field: "student_visa_needed", equals: "כן" }
-        },
-        {
-          id: "student_visa_rule_travel",
-          label: "ידוע לי כי כל יציאה מהעיר, מהמדינה או מחוץ לארצות הברית מחייבת קבלת אישור מראש מהמשרד, לאחר מסירת פרטי הנסיעה והמועדים המתוכננים.",
-          type: "checkbox",
-          agreement: true,
-          required: true,
-          layout: "wide",
-          hideWhenContains: { field: "citizenships", value: "ארה״ב" },
-          showWhen: { field: "student_visa_needed", equals: "כן" }
-        },
-        {
-          id: "student_visa_rule_work",
-          label: "ידוע לי כי בהתאם לתנאי ויזת הסטודנט, חל עליי איסור לעבוד במהלך שנת הלימודים. ידוע לי כי עבודה בניגוד לתנאי הוויזה מהווה הפרה של מעמד הסטודנט, ועלולה להביא לביטול המעמד ולהשלכות נוספות על פי חוק.",
-          type: "checkbox",
-          agreement: true,
-          required: true,
-          layout: "wide",
-          hideWhenContains: { field: "citizenships", value: "ארה״ב" },
-          showWhen: { field: "student_visa_needed", equals: "כן" }
-        },
-        {
-          id: "student_visa_rule_dormitory",
-          label: "ידוע לי כי השתתפותי בתוכנית הלימודים מותנית במגורים בפנימיות הישיבה במשך כל תקופת הלימודים.",
-          type: "checkbox",
-          agreement: true,
-          required: true,
-          layout: "wide",
-          hideWhenContains: { field: "citizenships", value: "ארה״ב" },
-          showWhen: { field: "student_visa_needed", equals: "כן" }
-        },
-        {
-          id: "student_visa_rule_confirmation",
-          label: "אני מאשר כי קראתי בעיון את כל האמור לעיל, הבנתי את משמעותו, ואני מתחייב לפעול בהתאם לכל הנהלים וההוראות של מכון חנה ולכל דרישות רשויות ההגירה של ארצות הברית.",
-          type: "checkbox",
-          agreement: true,
-          required: true,
-          layout: "wide",
-          hideWhenContains: { field: "citizenships", value: "ארה״ב" },
-          showWhen: { field: "student_visa_needed", equals: "כן" }
-        },
-        {
-          id: "student_visa_signature",
-          label: "חתימת תלמיד לאישור כללי ויזת סטודנט",
-          type: "signature",
-          required: true,
-          hint: "יש לחתום בעכבר, באצבע במסך מגע או בעט דיגיטלי.",
-          hideWhenContains: { field: "citizenships", value: "ארה״ב" },
-          showWhen: { field: "student_visa_needed", equals: "כן" }
-        }
+        { id: "arrival_visa_other", label: "פירוט אשרה אחרת", type: "text", required: true, hideWhenContains: { field: "citizenships", value: "ארה״ב" }, showWhen: { field: "arrival_visa", equals: "אחר" } }
       ]
     },
     {
@@ -516,95 +440,6 @@
         { id: "mother_city", label: "עיר", type: "text", required: true, autocomplete: "address-level2", showWhen: { field: "parents_live_together", equals: "לא" }, disabledWhen: { field: "mother_address_not_relevant", equals: true } },
         { id: "mother_state", label: "מדינה", type: "text", required: true, autocomplete: "address-level1", showWhen: { field: "parents_live_together", equals: "לא" }, disabledWhen: { field: "mother_address_not_relevant", equals: true } },
         { id: "mother_zip", label: "מיקוד", type: "text", required: true, autocomplete: "postal-code", showWhen: { field: "parents_live_together", equals: "לא" }, disabledWhen: { field: "mother_address_not_relevant", equals: true } }
-      ]
-    },
-    {
-      id: "tuition",
-      title: "שכר לימוד",
-      fields: [
-        {
-          id: "tuition_info",
-          type: "intro_text",
-          title: "שכר לימוד",
-          paragraphs: () => [
-            `עלות החזקת תלמיד בישיבה עומדת על ${tuitionAmounts().full} דולר לחודש.`,
-            "סכום זה משקף את העלויות הכרוכות בהפעלת המסגרת, ובכלל זה הפעלת הפנימיות, שכירת מקומות לינה, צוות והוצאות נוספות לאורך כל שנת הלימודים.",
-            tuitionPeriodText(),
-            "אמצעי התשלום הרגיל הוא כרטיס אשראי, המחויב באופן אוטומטי בהתאם ללוח התשלומים. ניתן לשלם גם באמצעות צ'קים, בתיאום מראש ובמסירת כל הצ'קים מראש."
-          ],
-          sections: [
-            {
-              title: "לוח התשלומים",
-              items: [
-                "עם השלמת הרישום ייגבה יחד עם הפקדון גם התשלום הראשון, בגובה חצי חודש לימודים.",
-                "התשלום השני ייגבה ביום 1 בספטמבר 2026.",
-                "לאחר מכן ייגבה תשלום באופן אוטומטי ב-1 לכל חודש לועזי.",
-                "התשלום האחרון ייגבה ביום 1 באוקטובר 2027."
-              ]
-            },
-            {
-              title: "בקשת הנחה",
-              paragraphs: [
-                "אנו מודעים לכך שלעיתים קיימים קשיים כלכליים, ולכן פועלת במסגרת התוכנית קרן חירות, המסייעת למשפחות הזקוקות להשתתפות בשכר הלימוד.",
-                "לצד רצוננו לסייע לכל הפונים, חשוב לדעת כי משאבי הקרן מוגבלים. ועדת ההנחות תעשה כמיטב יכולתה להעניק את הסיוע המרבי האפשרי לכל משפחה, בהתאם לנתוניה ולמשאבים העומדים לרשות הקרן."
-              ]
-            }
-          ],
-          signature: []
-        },
-        {
-          id: "discount_request_type",
-          label: "באפשרותכם לבחור אחת מהאפשרויות הבאות:",
-          type: "radio",
-          options: tuitionDiscountOptions,
-          required: true,
-          relaxed: true
-        },
-        {
-          id: "discount_form_section",
-          type: "intro_text",
-          title: "בקשת הנחה",
-          paragraphs: [
-            "יש להוריד את קובץ בקשת ההנחה ולמלא אותו בנפרד."
-          ],
-          discountPreview: true,
-          links: [
-            {
-              label: "הורד את קובץ בקשת ההנחה",
-              url: discountFormFileUrl,
-              download: true
-            }
-          ],
-          note: "את בקשת ההנחה יש לשלוח לכתובת: cherut@kvutze.org",
-          signature: [],
-          showWhen: { field: "discount_request_type", equals: additionalDiscountOption }
-        }
-      ]
-    },
-    {
-      id: "deposit",
-      title: "פיקדון",
-      fields: [
-        {
-          id: "deposit_info",
-          type: "intro_text",
-          title: "פיקדון",
-          paragraphs: [
-            "בסיום תהליך הרישום - יחד עם התשלום הראשוני [בגובה חצי חודש] - על כל תלמיד להפקיד פקדון על סך 300$ לפני תחילת השהות. הפקדון נועד להבטיח את שמירת הכללים ואת העמידה בתנאי התשלום, וניתן להפקידו בכרטיס אשראי בצ'ק או בהעברה בנקאית.",
-            "חשוב להבהיר כי אנו גובים את הפקדון והוא נשמר אצלנו לאורך כל התקופה.",
-            "עם תום השהות יוחזר הפקדון — באותו אופן שבו שולם, ותוך 30 יום ממועד היציאה — לאחר יציאה מוחלטת מהפנימייה, לרבות פינוי כל החפצים האישיים. זאת, אלא אם מצאה ההנהלה עילה להפחתתו.",
-            "שימו לב: הרישום יושלם רק לאחר חתימת חוזה התשלום והתשלום הראשוני."
-          ],
-          signature: []
-        },
-        {
-          id: "deposit_terms_accepted",
-          label: "אני מאשר כי קראתי והבנתי את תנאי הפיקדון, ואני מסכים להפקיד פיקדון בסך 300 דולר בהתאם לתנאים המפורטים לעיל.",
-          type: "checkbox",
-          agreement: true,
-          required: true,
-          layout: "wide"
-        }
       ]
     },
     {
@@ -986,6 +821,200 @@
       ]
     },
     {
+      id: "registration_payment",
+      title: "דמי הרשמה",
+      fields: [
+        {
+          id: "registration_payment_info",
+          type: "intro_text",
+          title: "תשלום דמי הרשמה",
+          paragraphs: [
+            "כדי להמשיך לסיכום ושליחת הטופס, יש לשלם דמי הרשמה חד־פעמיים בסך 10 דולר.",
+            "התשלום מתבצע בצורה מאובטחת דרך Stripe. לאחר אישור התשלום תחזרו לטופס ותוכלו להמשיך לסיכום הפרטים ולשליחת הבקשה.",
+            "אם התשלום כבר בוצע, אך מסיבה כלשהי חזרתם לטופס, אין צורך לשלם שוב. לחצו על \"שילמתי כבר\", והמערכת תנסה לאתר את התשלום שבוצע על פי השם באנגלית ותאריך הלידה שהוזנו בטופס."
+          ],
+          signature: []
+        },
+        {
+          id: "registration_payment",
+          type: "payment",
+          required: true,
+          amountUsd: 10
+        }
+      ]
+    },
+    {
+      id: "tuition",
+      title: "שכר לימוד",
+      fields: [
+        {
+          id: "tuition_info",
+          type: "intro_text",
+          title: "שכר לימוד",
+          paragraphs: () => [
+            `עלות החזקת תלמיד בישיבה עומדת על ${tuitionAmounts().full} דולר לחודש.`,
+            "סכום זה משקף את העלויות הכרוכות בהפעלת המסגרת, ובכלל זה הפעלת הפנימיות, שכירת מקומות לינה, צוות והוצאות נוספות לאורך כל שנת הלימודים.",
+            tuitionPeriodText(),
+            "אמצעי התשלום הרגיל הוא כרטיס אשראי, המחויב באופן אוטומטי בהתאם ללוח התשלומים. ניתן לשלם גם באמצעות צ'קים, בתיאום מראש ובמסירת כל הצ'קים מראש."
+          ],
+          sections: [
+            {
+              title: "לוח התשלומים",
+              items: [
+                "עם השלמת הרישום ייגבה יחד עם הפקדון גם התשלום הראשון, בגובה חצי חודש לימודים.",
+                "התשלום השני ייגבה ביום 1 בספטמבר 2026.",
+                "לאחר מכן ייגבה תשלום באופן אוטומטי ב-1 לכל חודש לועזי.",
+                "התשלום האחרון ייגבה ביום 1 באוקטובר 2027."
+              ]
+            },
+            {
+              title: "בקשת הנחה",
+              paragraphs: [
+                "אנו מודעים לכך שלעיתים קיימים קשיים כלכליים, ולכן פועלת במסגרת התוכנית קרן חירות, המסייעת למשפחות הזקוקות להשתתפות בשכר הלימוד.",
+                "לצד רצוננו לסייע לכל הפונים, חשוב לדעת כי משאבי הקרן מוגבלים. ועדת ההנחות תעשה כמיטב יכולתה להעניק את הסיוע המרבי האפשרי לכל משפחה, בהתאם לנתוניה ולמשאבים העומדים לרשות הקרן."
+              ]
+            }
+          ],
+          signature: []
+        },
+        {
+          id: "discount_request_type",
+          label: "באפשרותכם לבחור אחת מהאפשרויות הבאות:",
+          type: "radio",
+          options: tuitionDiscountOptions,
+          required: true,
+          relaxed: true
+        },
+        {
+          id: "discount_form_section",
+          type: "intro_text",
+          title: "בקשת הנחה",
+          paragraphs: [
+            "יש להוריד את קובץ בקשת ההנחה ולמלא אותו בנפרד."
+          ],
+          discountPreview: true,
+          links: [
+            {
+              label: "הורד את קובץ בקשת ההנחה",
+              url: discountFormFileUrl,
+              download: true
+            }
+          ],
+          note: "את בקשת ההנחה יש לשלוח לכתובת: cherut@kvutze.org",
+          signature: [],
+          showWhen: { field: "discount_request_type", equals: additionalDiscountOption }
+        }
+      ]
+    },
+    {
+      id: "deposit",
+      title: "פיקדון",
+      fields: [
+        {
+          id: "deposit_info",
+          type: "intro_text",
+          title: "פיקדון",
+          paragraphs: [
+            "בסיום תהליך הרישום - יחד עם התשלום הראשוני [בגובה חצי חודש] - על כל תלמיד להפקיד פקדון על סך 300$ לפני תחילת השהות. הפקדון נועד להבטיח את שמירת הכללים ואת העמידה בתנאי התשלום, וניתן להפקידו בכרטיס אשראי בצ'ק או בהעברה בנקאית.",
+            "חשוב להבהיר כי אנו גובים את הפקדון והוא נשמר אצלנו לאורך כל התקופה.",
+            "עם תום השהות יוחזר הפקדון — באותו אופן שבו שולם, ותוך 30 יום ממועד היציאה — לאחר יציאה מוחלטת מהפנימייה, לרבות פינוי כל החפצים האישיים. זאת, אלא אם מצאה ההנהלה עילה להפחתתו.",
+            "שימו לב: הרישום יושלם רק לאחר חתימת חוזה התשלום והתשלום הראשוני."
+          ],
+          signature: []
+        },
+        {
+          id: "deposit_terms_accepted",
+          label: "אני מאשר כי קראתי והבנתי את תנאי הפיקדון, ואני מסכים להפקיד פיקדון בסך 300 דולר בהתאם לתנאים המפורטים לעיל.",
+          type: "checkbox",
+          agreement: true,
+          required: true,
+          layout: "wide"
+        }
+      ]
+    },
+    {
+      id: "student_visa_rules",
+      title: "חתימה על כללי הוויזה",
+      fields: [
+        {
+          id: "student_visa_rules_section",
+          type: "section",
+          label: "כללי ויזת סטודנט",
+          hideWhenContains: { field: "citizenships", value: "ארה״ב" },
+          showWhen: { field: "student_visa_needed", equals: "כן" }
+        },
+        {
+          id: "student_visa_rule_i20",
+          label: "ידוע לי כי אישור הלימודים (טופס ה-I-20) מונפק על ידי מוסד הלימודים מכון חנה, וכי מטרת הגעתי לארצות הברית היא לצורך לימודים במוסד זה בלבד, ולא לכל מטרה אחרת.",
+          type: "checkbox",
+          agreement: true,
+          required: true,
+          layout: "wide",
+          hideWhenContains: { field: "citizenships", value: "ארה״ב" },
+          showWhen: { field: "student_visa_needed", equals: "כן" }
+        },
+        {
+          id: "student_visa_rule_attendance",
+          label: "ידוע לי כי קבלת מעמד הסטודנט והמשך שמירתו מותנים בהשתתפות סדירה ומלאה בכל תוכניות הלימוד, השיעורים והפעילויות הנדרשות על ידי המוסד. היעדרויות, אי-עמידה בדרישות הלימוד או אי-שמירה על נהלי המוסד עלולים להביא לפגיעה במעמד הסטודנט, לרבות ביטול אישור הלימודים, בהתאם לדין ולהוראות המוסד.",
+          type: "checkbox",
+          agreement: true,
+          required: true,
+          layout: "wide",
+          hideWhenContains: { field: "citizenships", value: "ארה״ב" },
+          showWhen: { field: "student_visa_needed", equals: "כן" }
+        },
+        {
+          id: "student_visa_rule_travel",
+          label: "ידוע לי כי כל יציאה מהעיר, מהמדינה או מחוץ לארצות הברית מחייבת קבלת אישור מראש מהמשרד, לאחר מסירת פרטי הנסיעה והמועדים המתוכננים.",
+          type: "checkbox",
+          agreement: true,
+          required: true,
+          layout: "wide",
+          hideWhenContains: { field: "citizenships", value: "ארה״ב" },
+          showWhen: { field: "student_visa_needed", equals: "כן" }
+        },
+        {
+          id: "student_visa_rule_work",
+          label: "ידוע לי כי בהתאם לתנאי ויזת הסטודנט, חל עליי איסור לעבוד במהלך שנת הלימודים. ידוע לי כי עבודה בניגוד לתנאי הוויזה מהווה הפרה של מעמד הסטודנט, ועלולה להביא לביטול המעמד ולהשלכות נוספות על פי חוק.",
+          type: "checkbox",
+          agreement: true,
+          required: true,
+          layout: "wide",
+          hideWhenContains: { field: "citizenships", value: "ארה״ב" },
+          showWhen: { field: "student_visa_needed", equals: "כן" }
+        },
+        {
+          id: "student_visa_rule_dormitory",
+          label: "ידוע לי כי השתתפותי בתוכנית הלימודים מותנית במגורים בפנימיות הישיבה במשך כל תקופת הלימודים.",
+          type: "checkbox",
+          agreement: true,
+          required: true,
+          layout: "wide",
+          hideWhenContains: { field: "citizenships", value: "ארה״ב" },
+          showWhen: { field: "student_visa_needed", equals: "כן" }
+        },
+        {
+          id: "student_visa_rule_confirmation",
+          label: "אני מאשר כי קראתי בעיון את כל האמור לעיל, הבנתי את משמעותו, ואני מתחייב לפעול בהתאם לכל הנהלים וההוראות של מכון חנה ולכל דרישות רשויות ההגירה של ארצות הברית.",
+          type: "checkbox",
+          agreement: true,
+          required: true,
+          layout: "wide",
+          hideWhenContains: { field: "citizenships", value: "ארה״ב" },
+          showWhen: { field: "student_visa_needed", equals: "כן" }
+        },
+        {
+          id: "student_visa_signature",
+          label: "חתימת תלמיד לאישור כללי ויזת סטודנט",
+          type: "signature",
+          required: true,
+          hint: "יש לחתום בעכבר, באצבע במסך מגע או בעט דיגיטלי.",
+          hideWhenContains: { field: "citizenships", value: "ארה״ב" },
+          showWhen: { field: "student_visa_needed", equals: "כן" }
+        }
+      ]
+    },
+    {
       id: "agreements",
       title: "שימוש בתמונות",
       fields: [
@@ -1015,28 +1044,6 @@
           type: "signature",
           required: true,
           hint: "יש לחתום בעכבר, באצבע במסך מגע או בעט דיגיטלי."
-        }
-      ]
-    },
-    {
-      id: "registration_payment",
-      title: "דמי הרשמה",
-      fields: [
-        {
-          id: "registration_payment_info",
-          type: "intro_text",
-          title: "תשלום דמי הרשמה",
-          paragraphs: [
-            "כדי להמשיך לסיכום ושליחת הטופס, יש לשלם דמי הרשמה חד־פעמיים בסך 10 דולר.",
-            "התשלום מתבצע בצורה מאובטחת דרך Stripe. לאחר אישור התשלום תחזרו לטופס ותוכלו להמשיך לסיכום הפרטים ולשליחת הבקשה."
-          ],
-          signature: []
-        },
-        {
-          id: "registration_payment",
-          type: "payment",
-          required: true,
-          amountUsd: 10
         }
       ]
     },
@@ -1806,13 +1813,18 @@
     const failed = status === "failed";
     const cancelled = status === "cancelled";
     const devSkipped = status === "dev_skipped";
+    const alreadyPaid = status === "already_paid";
+    const checkingExisting = status === "existing_verifying";
+    const existingFailed = status === "existing_failed";
 
-    const title = devSkipped ? "התשלום דולג לצורך בדיקה" : paid ? "התשלום התקבל" : verifying ? "בודק את אישור התשלום..." : "תשלום דמי הרשמה";
+    const title = devSkipped ? "התשלום דולג לצורך בדיקה" : alreadyPaid ? "נמצא תשלום קודם" : paid ? "התשלום התקבל" : verifying || checkingExisting ? "בודק את אישור התשלום..." : "תשלום דמי הרשמה";
     const description = devSkipped
       ? "מצב בדיקות פעיל כרגע, ולכן אפשר להמשיך לסיכום בלי לשלם בפועל. בפרסום אמיתי נכבה את האפשרות הזו."
+      : alreadyPaid
+        ? "מצאנו תשלום דמי הרשמה קודם לפי הפרטים שהוזנו. ניתן להמשיך לשלב הבא."
       : paid
         ? `דמי ההרשמה בסך ${field.amountUsd} דולר שולמו בהצלחה. ניתן להמשיך לשלב הבא.`
-        : verifying
+        : verifying || checkingExisting
           ? "אנחנו מאמתים מול Stripe שהתשלום עבר בהצלחה. זה אמור לקחת כמה שניות."
           : `יש לשלם ${field.amountUsd} דולר כדי להמשיך לסיכום ושליחת הטופס.`;
 
@@ -1822,6 +1834,7 @@
         <span>${escapeHtml(description)}</span>
         ${failed ? `<span class="payment-warning">לא הצלחנו לאמת את התשלום. אם חויבתם, אפשר לבדוק שוב או לפנות למשרד.</span>` : ""}
         ${cancelled ? `<span class="payment-warning">התשלום בוטל. ניתן לנסות שוב.</span>` : ""}
+        ${existingFailed ? `<span class="payment-warning">לא נמצא תשלום קודם לפי הפרטים שהוזנו.</span>` : ""}
       </div>
     `;
 
@@ -1844,15 +1857,107 @@
     }
 
     if (!paid && !verifying) {
+      const actions = document.createElement("div");
+      actions.className = "payment-actions";
+
       const button = document.createElement("button");
       button.type = "button";
       button.className = "payment-button registration-payment-start";
       button.textContent = "לתשלום מאובטח ב-Stripe";
       button.addEventListener("click", () => startRegistrationPayment(field, button));
-      panel.appendChild(button);
+      actions.appendChild(button);
+
+      if (!checkingExisting) {
+        const alreadyPaidButton = document.createElement("button");
+        alreadyPaidButton.type = "button";
+        alreadyPaidButton.className = "payment-button secondary-payment-button compact-payment-button";
+        alreadyPaidButton.textContent = "שילמתי כבר";
+        alreadyPaidButton.addEventListener("click", openExistingPaymentLookup);
+        actions.appendChild(alreadyPaidButton);
+      }
+
+      panel.appendChild(actions);
+    }
+
+    if (!verifying && shouldShowExistingPaymentLookup()) {
+      panel.appendChild(createAlreadyPaidBox());
     }
 
     return panel;
+  }
+
+  function createAlreadyPaidBox() {
+    const box = document.createElement("div");
+    const active = shouldShowExistingPaymentLookup();
+    const checking = state.values.registration_payment_status === "existing_verifying";
+    box.className = `already-paid-box${active ? " is-active" : ""}`;
+
+    box.innerHTML = `
+      <div class="already-paid-header">
+        <div>
+          <strong>כבר שילמתי דמי הרשמה</strong>
+          <span>הכניסו תאריך לידה לועזי ושם משפחה באנגלית. המערכת תבדוק אם קיים תשלום קודם.</span>
+        </div>
+        <button type="button" class="payment-button secondary-payment-button already-paid-cancel">בטל</button>
+      </div>
+      <div class="already-paid-fields">
+        <label>
+          <span>תאריך לידה לועזי</span>
+          <input type="date" data-payment-lookup="registration_payment_existing_birth_date" value="${escapeHtml(state.values.registration_payment_existing_birth_date || state.values.birth_date || "")}">
+        </label>
+        <label>
+          <span>שם משפחה באנגלית</span>
+          <input type="text" dir="ltr" data-payment-lookup="registration_payment_existing_last_name_en" value="${escapeHtml(state.values.registration_payment_existing_last_name_en || state.values.student_last_name_en || "")}">
+        </label>
+      </div>
+      <button type="button" class="payment-button already-paid-verify">${checking ? "בודק..." : "בדוק תשלום קודם"}</button>
+    `;
+
+    box.querySelector(".already-paid-cancel").addEventListener("click", () => {
+      clearExistingPaymentLookup();
+      saveDraft(false);
+      render();
+    });
+
+    box.querySelectorAll("[data-payment-lookup]").forEach((input) => {
+      input.addEventListener("input", (event) => {
+        state.values[event.target.dataset.paymentLookup] = event.target.value;
+        if (state.values.registration_payment_status === "already_paid") state.values.registration_payment_status = "existing_lookup";
+        saveDraft(false);
+      });
+    });
+
+    const verifyButton = box.querySelector(".already-paid-verify");
+    verifyButton.disabled = checking;
+    verifyButton.addEventListener("click", () => verifyExistingRegistrationPayment(verifyButton));
+
+    return box;
+  }
+
+  function openExistingPaymentLookup() {
+    state.values.registration_payment_status = "existing_lookup";
+    state.values.registration_payment_session_id = "";
+    state.values.registration_payment_existing_birth_date = state.values.registration_payment_existing_birth_date || state.values.birth_date || "";
+    state.values.registration_payment_existing_last_name_en = state.values.registration_payment_existing_last_name_en || state.values.student_last_name_en || "";
+    saveDraft(false);
+    render();
+  }
+
+  function clearExistingPaymentLookup() {
+    state.values.registration_payment_status = "";
+    state.values.registration_payment_session_id = "";
+    state.values.registration_payment_paid_at = null;
+  }
+
+  function hasAlreadyPaidLookupDetails() {
+    return Boolean(
+      (state.values.registration_payment_existing_birth_date || state.values.birth_date) &&
+      (state.values.registration_payment_existing_last_name_en || state.values.student_last_name_en)
+    );
+  }
+
+  function shouldShowExistingPaymentLookup() {
+    return ["existing_lookup", "existing_verifying", "existing_failed", "already_paid"].includes(state.values.registration_payment_status);
   }
 
   function skipRegistrationPaymentForDev() {
@@ -1879,7 +1984,9 @@
         body: JSON.stringify({
           amountUsd: field.amountUsd,
           studentEmail: state.values.student_email || "",
-          studentName: `${state.values.student_first_name_en || state.values.student_first_name_he || ""} ${state.values.student_last_name_en || state.values.student_last_name_he || ""}`.trim()
+          studentName: `${state.values.student_first_name_en || state.values.student_first_name_he || ""} ${state.values.student_last_name_en || state.values.student_last_name_he || ""}`.trim(),
+          birthDate: state.values.birth_date || "",
+          lastNameEn: state.values.student_last_name_en || ""
         })
       });
 
@@ -1970,12 +2077,61 @@
     return result;
   }
 
+  async function verifyExistingRegistrationPayment(button) {
+    formError.textContent = "";
+    state.values.registration_payment_existing_birth_date = state.values.registration_payment_existing_birth_date || state.values.birth_date || "";
+    state.values.registration_payment_existing_last_name_en = state.values.registration_payment_existing_last_name_en || state.values.student_last_name_en || "";
+
+    if (!hasAlreadyPaidLookupDetails()) {
+      formError.textContent = "יש למלא תאריך לידה לועזי ושם משפחה באנגלית.";
+      return false;
+    }
+
+    if (button) {
+      button.disabled = true;
+      button.textContent = "בודק...";
+    }
+    state.values.registration_payment_status = "existing_verifying";
+    saveDraft(false);
+    render();
+
+    try {
+      const response = await fetch("/.netlify/functions/verify-existing-registration-payment", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          birthDate: state.values.registration_payment_existing_birth_date,
+          lastNameEn: state.values.registration_payment_existing_last_name_en
+        })
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok || !result.paid) throw new Error(result.error || "לא נמצא תשלום קודם.");
+
+      state.values.registration_payment_status = "already_paid";
+      state.values.registration_payment_session_id = result.paymentIntentId || result.sessionId || "existing-payment";
+      state.values.registration_payment_amount_usd = typeof result.amountUsd === "number" ? result.amountUsd : 10;
+      state.values.registration_payment_paid_at = result.paidAt || null;
+      saveDraft(false);
+      render();
+      return true;
+    } catch (error) {
+      state.values.registration_payment_status = "existing_failed";
+      state.values.registration_payment_session_id = "";
+      state.values.registration_payment_paid_at = null;
+      saveDraft(false);
+      render();
+      formError.textContent = error.message || "לא נמצא תשלום קודם לפי הפרטים שהוזנו.";
+      return false;
+    }
+  }
+
   function cleanPaymentUrl() {
     window.history.replaceState({}, document.title, `${window.location.origin}${window.location.pathname}`);
   }
 
   function isRegistrationPaymentPaid() {
     if (DEV_SKIP_PAYMENT_VALIDATION && state.values.registration_payment_status === "dev_skipped") return true;
+    if (state.values.registration_payment_status === "already_paid") return Boolean(state.values.registration_payment_session_id);
     return state.values.registration_payment_status === "paid" && Boolean(state.values.registration_payment_session_id);
   }
 
@@ -2063,8 +2219,8 @@
         valid = false;
       }
 
-      if (field.type === "payment" && field.required && !DEV_SKIP_PAYMENT_VALIDATION && !isRegistrationPaymentPaid()) {
-        setError(field.id, "יש להשלים את תשלום דמי ההרשמה לפני המשך.");
+      if (field.type === "payment" && field.required && (!DEV_SKIP_PAYMENT_VALIDATION || shouldShowExistingPaymentLookup()) && !isRegistrationPaymentPaid()) {
+        setError(field.id, shouldShowExistingPaymentLookup() ? "יש לבדוק את התשלום הקודם לפני המשך." : "יש להשלים את תשלום דמי ההרשמה לפני המשך.");
         valid = false;
       }
 
@@ -2154,6 +2310,7 @@
 
   async function ensureRegistrationPaymentVerified() {
     if (DEV_SKIP_PAYMENT_VALIDATION && state.values.registration_payment_status === "dev_skipped") return true;
+    if (state.values.registration_payment_status === "already_paid" && state.values.registration_payment_session_id) return true;
 
     const paymentStepIndex = steps.findIndex((step) => step.id === "registration_payment");
     if (!isRegistrationPaymentPaid()) {
@@ -2368,6 +2525,8 @@
       registration_payment_session_id: values.registration_payment_session_id || null,
       registration_payment_amount_usd: values.registration_payment_amount_usd || 10,
       registration_payment_paid_at: values.registration_payment_paid_at || null,
+      registration_payment_existing_birth_date: values.registration_payment_existing_birth_date || null,
+      registration_payment_existing_last_name_en: values.registration_payment_existing_last_name_en || null,
       discount_request_type: values.discount_request_type || null,
       deposit_terms_accepted: Boolean(values.deposit_terms_accepted),
       dormitory_rules_accepted: Boolean(values.dormitory_rules_accepted),
@@ -2577,14 +2736,24 @@
     return [
       ["סטטוס תשלום", paymentStatusReviewValue()],
       ["סכום", `${state.values.registration_payment_amount_usd || 10} דולר`],
-      ["מספר אישור Stripe", state.values.registration_payment_session_id],
+      ["מספר אישור תשלום", state.values.registration_payment_session_id],
+      ["זיהוי תשלום קודם", alreadyPaidReviewValue()],
       ["זמן תשלום", state.values.registration_payment_paid_at]
     ];
   }
 
   function paymentStatusReviewValue() {
     if (state.values.registration_payment_status === "dev_skipped") return "דולג לצורך בדיקה";
+    if (state.values.registration_payment_status === "already_paid") return "שולם בעבר - אומת במערכת";
     return isRegistrationPaymentPaid() ? "שולם" : "לא שולם";
+  }
+
+  function alreadyPaidReviewValue() {
+    if (state.values.registration_payment_status !== "already_paid") return "";
+    return compactJoin([
+      state.values.registration_payment_existing_birth_date,
+      state.values.registration_payment_existing_last_name_en
+    ]);
   }
 
   function tuitionReviewRows() {

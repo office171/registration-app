@@ -269,6 +269,7 @@
           id: "israeli_passport_number",
           label: "מספר דרכון ישראלי",
           type: "text",
+          required: true,
           layout: "pair",
           showWhen: { field: "citizenships", contains: "ישראל" }
         },
@@ -276,6 +277,7 @@
           id: "us_passport_number",
           label: "מספר דרכון אמריקאי",
           type: "text",
+          required: true,
           layout: "pair",
           showWhen: { field: "citizenships", contains: "ארה״ב" }
         },
@@ -283,6 +285,7 @@
           id: "us_social_security_number",
           label: "מספר Social Security אמריקאי",
           type: "text",
+          required: true,
           layout: "pair",
           showWhen: { field: "citizenships", contains: "ארה״ב" }
         },
@@ -290,6 +293,7 @@
           id: "french_passport_number",
           label: "מספר דרכון צרפתי",
           type: "text",
+          required: true,
           showWhen: { field: "citizenships", contains: "צרפת" }
         },
         {
@@ -297,6 +301,7 @@
           label: "מספר דרכון אחר",
           dynamicLabel: { prefix: "מספר דרכון", field: "citizenship_other", separator: " " },
           type: "text",
+          required: true,
           hint: "אם יש כמה דרכונים, יש למלא כאן דרכון נוסף שאינו מופיע בשדות שלמעלה.",
           showWhen: { field: "citizenships", contains: "אחר" }
         },
@@ -1328,6 +1333,12 @@
       formFields.querySelectorAll("[data-edit-step]").forEach((button) => {
         button.addEventListener("click", () => goToStep(button.dataset.editStep));
       });
+      formFields.querySelectorAll("[data-missing-file-step]").forEach((button) => {
+        button.addEventListener("click", () => {
+          const missingFile = missingRequiredFiles().find((item) => item.field.id === button.dataset.missingFileField);
+          if (missingFile) goToMissingRequiredFile(missingFile);
+        });
+      });
       formFields.querySelector("[data-print-review]")?.addEventListener("click", () => window.print());
     }
   }
@@ -2268,9 +2279,37 @@
     return valid;
   }
 
+  function missingRequiredFiles() {
+    const missing = [];
+    steps.forEach((step) => {
+      if (step.isReview || !stepHasVisibleFields(step)) return;
+      step.fields.forEach((field) => {
+        if (field.type !== "file" || !field.required || !isVisible(field) || isDisabled(field)) return;
+        if (!hasFileValue(state.files[field.id])) missing.push({ step, field });
+      });
+    });
+    return missing;
+  }
+
+  function goToMissingRequiredFile(missingFile) {
+    state.stepIndex = steps.findIndex((step) => step.id === missingFile.step.id);
+    state.returnToReviewFromStep = missingFile.step.id;
+    saveDraft(false);
+    render();
+    formError.textContent = "הקובץ לא נשמר לאחר רענון הדף. יש לצרף אותו מחדש לפני השליחה.";
+    setError(missingFile.field.id, "יש לצרף את הקובץ מחדש");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
   async function submitRegistration(event) {
     event.preventDefault();
     if (!validateStep()) return;
+
+    const missingFile = missingRequiredFiles()[0];
+    if (missingFile) {
+      goToMissingRequiredFile(missingFile);
+      return;
+    }
 
     const paymentOk = await ensureRegistrationPaymentVerified();
     if (!paymentOk) return;
@@ -2655,6 +2694,7 @@
   }
 
   function reviewCards() {
+    const missingFilesPanel = missingRequiredFilesReviewHtml();
     const cards = [
       reviewCard("פרטי תלמיד", "student", studentReviewRows()),
       reviewCard("אשרת שהייה", "visa", visaReviewRows()),
@@ -2667,7 +2707,28 @@
       <div class="review-toolbar">
         <button type="button" class="secondary review-print" data-print-review>הדפס / שמור PDF</button>
       </div>
+      ${missingFilesPanel}
       ${cards}
+    `;
+  }
+
+  function missingRequiredFilesReviewHtml() {
+    const missingFiles = missingRequiredFiles();
+    if (!missingFiles.length) return "";
+
+    return `
+      <section class="review-missing-files">
+        <h3>קבצים שצריך לצרף מחדש</h3>
+        <p>הקבצים אינם נשמרים לאחר רענון הדף. יש לצרף אותם מחדש לפני השליחה.</p>
+        <div class="missing-file-list">
+          ${missingFiles.map(({ field, step }) => `
+            <div class="missing-file-item">
+              <span>${escapeHtml(fieldLabel(field))}</span>
+              <button type="button" class="secondary missing-file-action" data-missing-file-step="${escapeHtml(step.id)}" data-missing-file-field="${escapeHtml(field.id)}">צרף מחדש</button>
+            </div>
+          `).join("")}
+        </div>
+      </section>
     `;
   }
 

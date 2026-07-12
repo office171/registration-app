@@ -880,6 +880,54 @@ button {
   min-height: 36px;
 }
 
+.review-missing-files {
+  display: grid;
+  gap: 10px;
+  padding: 16px;
+  border: 1px solid #d9a441;
+  border-radius: 8px;
+  background: #fff8e6;
+}
+
+.review-missing-files h3 {
+  margin: 0;
+  color: #684200;
+  font-size: 18px;
+}
+
+.review-missing-files p {
+  margin: 0;
+  color: #5c4a21;
+  line-height: 1.55;
+}
+
+.missing-file-list {
+  display: grid;
+  gap: 8px;
+}
+
+.missing-file-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid rgba(104, 66, 0, 0.18);
+  border-radius: 6px;
+  background: #fff;
+}
+
+.missing-file-item span {
+  font-weight: 800;
+  color: var(--ink);
+}
+
+.missing-file-action {
+  min-height: 34px;
+  padding: 0 12px;
+  white-space: nowrap;
+}
+
 .review-card {
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -1048,6 +1096,15 @@ button {
   .review-row {
     grid-template-columns: 1fr;
     gap: 3px;
+  }
+
+  .missing-file-item {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .missing-file-action {
+    width: 100%;
   }
 
   .review-card-header {

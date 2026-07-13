@@ -1,9 +1,18 @@
 (function () {
   const STORAGE_KEY = "kvutze-registration-draft-v1";
   const DEV_SKIP_REQUIRED_VALIDATION = false;
-  const DEV_SKIP_PAYMENT_VALIDATION = false;
+  const DEV_SKIP_PAYMENT_VALIDATION = isLocalPreview();
   const config = window.APP_CONFIG || {};
   const formStartedAt = new Date().toISOString();
+  const PROGRAM_END_DATE = "2027-11-07";
+  const DEFAULT_FULL_YEAR_START_DATE = "2026-08-27";
+  const GROUP_5786_FULL_YEAR_START_DATE = "2026-10-01";
+  const MIN_STUDY_START_DATE = "2026-08-27";
+  const FIRST_REGULAR_TUITION_CHARGE_DATE = "2026-09-01";
+
+  function isLocalPreview() {
+    return ["localhost", "127.0.0.1", "::1"].includes(window.location.hostname);
+  }
 
   const yeshivaOptions = [
     "אור יהודה",
@@ -342,15 +351,25 @@
           id: "study_duration",
           label: "לכמה זמן הנך מגיע ללמוד?",
           type: "radio",
-          options: ["שנה תמימה", "אחר"],
+          options: ["שנה תמימה", "לא שנה תמימה"],
           required: true
         },
         {
-          id: "study_duration_other",
-          label: "פירוט משך הלימודים",
-          type: "text",
+          id: "study_start_date",
+          label: "תאריך התחלת הלימודים",
+          type: "date",
           required: true,
-          showWhen: { field: "study_duration", equals: "אחר" }
+          calendarOnly: true,
+          min: MIN_STUDY_START_DATE,
+          visibleWhen: () => shouldAskStudyStartDate()
+        },
+        {
+          id: "study_end_date",
+          label: "תאריך סיום הלימודים",
+          type: "date",
+          required: true,
+          calendarOnly: true,
+          visibleWhen: () => shouldAskStudyEndDate()
         },
         {
           id: "student_visa_needed",
@@ -876,12 +895,7 @@
           sections: [
             {
               title: "לוח התשלומים",
-              items: [
-                "עם השלמת הרישום ייגבה יחד עם הפקדון גם התשלום הראשון, בגובה חצי חודש לימודים.",
-                "התשלום השני ייגבה ביום 1 בספטמבר 2026.",
-                "לאחר מכן ייגבה תשלום באופן אוטומטי ב-1 לכל חודש לועזי.",
-                "התשלום האחרון ייגבה ביום 1 באוקטובר 2027."
-              ]
+              items: tuitionPaymentScheduleItems
             },
             {
               title: "בקשת הנחה",
@@ -931,10 +945,10 @@
           type: "intro_text",
           title: "פיקדון",
           paragraphs: [
-            "בסיום תהליך הרישום - יחד עם התשלום הראשוני [בגובה חצי חודש] - על כל תלמיד להפקיד פקדון על סך 300$ לפני תחילת השהות. הפקדון נועד להבטיח את שמירת הכללים ואת העמידה בתנאי התשלום, וניתן להפקידו בכרטיס אשראי בצ'ק או בהעברה בנקאית.",
+            "בסיום תהליך הרישום על כל תלמיד להפקיד פקדון על סך 300$ לפני תחילת השהות. הפקדון נועד להבטיח את שמירת הכללים ואת העמידה בתנאי התשלום, וניתן להפקידו בכרטיס אשראי בצ'ק או בהעברה בנקאית.",
             "חשוב להבהיר כי אנו גובים את הפקדון והוא נשמר אצלנו לאורך כל התקופה.",
             "עם תום השהות יוחזר הפקדון — באותו אופן שבו שולם, ותוך 30 יום ממועד היציאה — לאחר יציאה מוחלטת מהפנימייה, לרבות פינוי כל החפצים האישיים. זאת, אלא אם מצאה ההנהלה עילה להפחתתו.",
-            "שימו לב: הרישום יושלם רק לאחר חתימת חוזה התשלום והתשלום הראשוני."
+            "שימו לב: הרישום יושלם רק לאחר חתימת חוזה התשלום, הסדרת אמצעי התשלום והפקדת הפיקדון."
           ],
           signature: []
         },
@@ -1262,10 +1276,10 @@
                     (section) => `
                       <div class="intro-subsection">
                         <h4>${escapeHtml(section.title)}</h4>
-                        ${section.paragraphs?.map((paragraph) => `<p>${escapeHtml(paragraph)}</p>`).join("") || ""}
+                        ${resolveList(section.paragraphs).map((paragraph) => `<p>${escapeHtml(paragraph)}</p>`).join("") || ""}
                         ${
-                          section.items?.length
-                            ? `<ul>${section.items.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>`
+                          resolveList(section.items).length
+                            ? `<ul>${resolveList(section.items).map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>`
                             : ""
                         }
                       </div>
@@ -1439,6 +1453,8 @@
     input.disabled = isDisabled(field);
     if (field.defaultValue && state.values[field.id] === undefined) state.values[field.id] = field.defaultValue;
     input.value = state.values[field.id] || field.defaultValue || "";
+    if (field.min) input.min = field.min;
+    if (field.max) input.max = field.max;
     if (field.type === "date" && field.minAge) input.max = maxBirthDateForAge(field.minAge);
     if (field.type === "date" && field.calendarOnly) {
       input.addEventListener("keydown", (event) => {
@@ -1574,10 +1590,10 @@
                     (section) => `
                       <div class="intro-subsection">
                         <h4>${escapeHtml(section.title)}</h4>
-                        ${section.paragraphs?.map((paragraph) => `<p>${escapeHtml(paragraph)}</p>`).join("") || ""}
+                        ${resolveList(section.paragraphs).map((paragraph) => `<p>${escapeHtml(paragraph)}</p>`).join("") || ""}
                         ${
-                          section.items?.length
-                            ? `<ul>${section.items.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>`
+                          resolveList(section.items).length
+                            ? `<ul>${resolveList(section.items).map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>`
                             : ""
                         }
                       </div>
@@ -1661,14 +1677,291 @@
   }
 
   function tuitionMonthsLabel() {
-    return (state.values.student_group_year || defaultGroupYear) === "קבוצה תשפ\"ו" ? "13" : "14.5";
+    return formatBillingMonths(tuitionBillingPlan().months);
   }
 
   function tuitionPeriodText() {
-    if ((state.values.student_group_year || defaultGroupYear) === "קבוצה תשפ\"ו") {
-      return "שכר הלימוד מחושב על פי תקופה של 13 חודשים (מז' חשון תשפ\"ז ועד ז' בחשון תשפ\"ח), ולכן שכר הלימוד מחושב בהתאם לתקופה זו.";
+    const plan = tuitionBillingPlan();
+    if (!plan.hasCustomDates && plan.groupYear === defaultGroupYear) {
+      return `שכר הלימוד מחושב על פני תקופה של ${formatBillingMonths(plan.months)} (מט\"ו אלול תשפ\"ו ועד ז' בחשון תשפ\"ח), ולכן שכר הלימוד הכולל מחושב בהתאם לתקופה זו.`;
     }
-    return "שכר הלימוד מחושב על פני תקופה של 14.5 חודשים (מט\"ו אלול תשפ\"ו ועד ז' בחשון תשפ\"ח), ולכן שכר הלימוד הכולל מחושב בהתאם לתקופה זו.";
+    return `שכר הלימוד מחושב לפי תקופת הלימודים בפועל: ${formatDateForDisplay(plan.startDate)} עד ${formatDateForDisplay(plan.endDate)}. לפי כללי החיוב, מספר חודשי החיוב הוא ${formatBillingMonths(plan.months)}.`;
+  }
+
+  function tuitionPaymentScheduleItems() {
+    const plan = tuitionBillingPlan();
+    const items = [
+      "הפיקדון נגבה מיד בעת השלמת תהליך הרישום.",
+      `מספר חודשי החיוב הכולל הוא ${formatBillingMonths(plan.months)}.`
+    ];
+    if (plan.schedule.length) {
+      items.splice(1, 0, `הגבייה החודשית הראשונה תתבצע ביום ${formatDateForDisplay(plan.firstChargeDate)}.`);
+    }
+    if (plan.hasPreFirstRegularCharge) {
+      items.push(`החיוב עבור התקופה שלפני 01/09/2026 (${billingFactorLabel(plan.preFirstRegularChargeFactor)}) ייגבה יחד עם הפיקדון.`);
+    }
+    if (plan.schedule.length) {
+      items.push(`פירוט החיובים: ${tuitionPaymentScheduleSummary(plan)}.`);
+    }
+    return items;
+  }
+
+  function shouldAskStudyStartDate() {
+    const groupYear = state.values.student_group_year || defaultGroupYear;
+    return state.values.study_duration === "לא שנה תמימה" || groupYear !== defaultGroupYear;
+  }
+
+  function shouldAskStudyEndDate() {
+    return state.values.study_duration === "לא שנה תמימה";
+  }
+
+  function effectiveStudyStartDate() {
+    const groupYear = state.values.student_group_year || defaultGroupYear;
+    if (shouldAskStudyStartDate() && state.values.study_start_date) return state.values.study_start_date;
+    if (groupYear === "קבוצה תשפ\"ו") return GROUP_5786_FULL_YEAR_START_DATE;
+    return DEFAULT_FULL_YEAR_START_DATE;
+  }
+
+  function effectiveStudyEndDate() {
+    if (shouldAskStudyEndDate() && state.values.study_end_date) return state.values.study_end_date;
+    return PROGRAM_END_DATE;
+  }
+
+  function tuitionBillingPlan() {
+    const groupYear = state.values.student_group_year || defaultGroupYear;
+    const startDate = effectiveStudyStartDate();
+    const endDate = effectiveStudyEndDate();
+    const schedule = billingSchedule(startDate, endDate);
+    const start = parseLocalDate(startDate);
+    const end = parseLocalDate(endDate);
+    const months = start && end && end >= start ? billingMonthsByDuration(start, end) : 0;
+    const preFirstRegularChargeFactor = preFirstRegularChargeMonths(start, end, months);
+    const regularSchedule = schedule.filter((item) => item.factor > 0);
+    return {
+      groupYear,
+      startDate,
+      endDate,
+      firstChargeDate: regularSchedule[0]?.chargeDate || "",
+      lastChargeDate: regularSchedule[regularSchedule.length - 1]?.chargeDate || "",
+      lastChargeFactor: regularSchedule[regularSchedule.length - 1]?.factor || 0,
+      months,
+      schedule,
+      preFirstRegularChargeFactor,
+      hasPreFirstRegularCharge: preFirstRegularChargeFactor > 0,
+      hasCustomDates: shouldAskStudyStartDate() || shouldAskStudyEndDate()
+    };
+  }
+
+  function tuitionPaymentSchedulePayload(plan) {
+    const parts = [];
+    if (plan.hasPreFirstRegularCharge) {
+      parts.push(`עם הפיקדון: ${billingFactorLabel(plan.preFirstRegularChargeFactor)} עבור התקופה שלפני 2026-09-01`);
+    }
+    if (plan.schedule.length) {
+      parts.push(tuitionPaymentScheduleSummary(plan));
+    }
+    return parts.join("; ");
+  }
+
+  function tuitionPaymentScheduleSummary(plan) {
+    return groupedBillingSchedule(plan.schedule)
+      .map((group) => `${formatScheduleGroupRange(group)} - ${billingFactorLabel(group.factor)}`)
+      .join("; ");
+  }
+
+  function groupedBillingSchedule(schedule) {
+    return schedule.reduce((groups, item) => {
+      const lastGroup = groups[groups.length - 1];
+      if (lastGroup && lastGroup.factor === item.factor && areConsecutiveMonths(lastGroup.endMonth, item.month)) {
+        lastGroup.endMonth = item.month;
+        return groups;
+      }
+      groups.push({ startMonth: item.month, endMonth: item.month, factor: item.factor });
+      return groups;
+    }, []);
+  }
+
+  function areConsecutiveMonths(first, second) {
+    const firstDate = parseLocalDate(first);
+    const secondDate = parseLocalDate(second);
+    if (!firstDate || !secondDate) return false;
+    return toDateInputValue(addMonths(firstDate, 1)) === toDateInputValue(secondDate);
+  }
+
+  function formatScheduleGroupRange(group) {
+    const start = formatMonthForDisplay(group.startMonth);
+    const end = formatMonthForDisplay(group.endMonth);
+    return start === end ? start : `${start}-${end}`;
+  }
+
+  function billingSchedule(startDateValue, endDateValue) {
+    const start = parseLocalDate(startDateValue);
+    const end = parseLocalDate(endDateValue);
+    if (!start || !end || end < start) return [];
+
+    const totalMonths = billingMonthsByDuration(start, end);
+    const regularMonths = Math.max(0, Number((totalMonths - preFirstRegularChargeMonths(start, end, totalMonths)).toFixed(2)));
+    const fullMonths = Math.floor(regularMonths);
+    const fractionalMonth = Number((regularMonths - fullMonths).toFixed(2));
+    const scheduleStartMonth = maxDate(firstDayOfMonth(start), parseLocalDate(FIRST_REGULAR_TUITION_CHARGE_DATE));
+    const schedule = [];
+
+    for (let index = 0; index < fullMonths; index += 1) {
+      const month = addMonths(scheduleStartMonth, index);
+      schedule.push({
+        month: toDateInputValue(month),
+        chargeDate: toDateInputValue(month),
+        factor: 1
+      });
+    }
+
+    if (fractionalMonth > 0) {
+      const month = addMonths(scheduleStartMonth, fullMonths);
+      schedule.push({
+        month: toDateInputValue(month),
+        chargeDate: toDateInputValue(month),
+        factor: fractionalMonth
+      });
+    }
+
+    return schedule;
+  }
+
+  function preFirstRegularChargeMonths(start, end, totalMonths) {
+    const firstRegularCharge = parseLocalDate(FIRST_REGULAR_TUITION_CHARGE_DATE);
+    if (!start || !end || start >= firstRegularCharge) return 0;
+    if (
+      toDateInputValue(start) === DEFAULT_FULL_YEAR_START_DATE &&
+      toDateInputValue(end) === PROGRAM_END_DATE
+    ) {
+      return Math.min(0.5, totalMonths);
+    }
+    const preRegularEnd = minDate(end, firstRegularCharge);
+    const preRegularDays = Math.max(0, daysBetween(start, preRegularEnd));
+    const preRegularMonths = preRegularDays > 0 ? Math.ceil(preRegularDays / 7) * 0.25 : 0;
+    return Math.min(preRegularMonths, totalMonths);
+  }
+
+  function billingMonthsByDuration(start, end) {
+    if (
+      toDateInputValue(start) === DEFAULT_FULL_YEAR_START_DATE &&
+      toDateInputValue(end) === PROGRAM_END_DATE
+    ) {
+      return 14.5;
+    }
+    const wholeMonths = wholeCalendarMonthsBetween(start, end);
+    const anchor = addCalendarMonthsClamped(start, wholeMonths);
+    const extraDays = Math.max(0, daysBetween(anchor, end));
+    const extraMonths = extraDays > 0 ? Math.ceil(extraDays / 7) * 0.25 : 0;
+
+    return wholeMonths + extraMonths;
+  }
+
+  function billingFactorLabel(factor) {
+    if (factor === 1) return "חיוב מלא";
+    return formatBillingMonths(factor);
+  }
+
+  function maxDate(first, second) {
+    return first > second ? first : second;
+  }
+
+  function minDate(first, second) {
+    return first < second ? first : second;
+  }
+
+  function wholeCalendarMonthsBetween(start, end) {
+    let months = (end.getFullYear() - start.getFullYear()) * 12 + (end.getMonth() - start.getMonth());
+    const anchor = addCalendarMonthsClamped(start, months);
+    if (anchor > end) months -= 1;
+    return Math.max(0, months);
+  }
+
+  function addCalendarMonthsClamped(date, count) {
+    const target = new Date(date.getFullYear(), date.getMonth() + count, 1);
+    const lastDay = new Date(target.getFullYear(), target.getMonth() + 1, 0).getDate();
+    target.setDate(Math.min(date.getDate(), lastDay));
+    return target;
+  }
+
+  function daysBetween(start, end) {
+    const startUtc = Date.UTC(start.getFullYear(), start.getMonth(), start.getDate());
+    const endUtc = Date.UTC(end.getFullYear(), end.getMonth(), end.getDate());
+    return Math.floor((endUtc - startUtc) / 86400000);
+  }
+
+  function parseLocalDate(value) {
+    if (!value) return null;
+    const parts = String(value).split("-").map(Number);
+    if (parts.length !== 3 || parts.some((part) => !Number.isFinite(part))) return null;
+    return new Date(parts[0], parts[1] - 1, parts[2]);
+  }
+
+  function firstDayOfMonth(value) {
+    const date = value instanceof Date ? value : parseLocalDate(value);
+    return date ? new Date(date.getFullYear(), date.getMonth(), 1) : null;
+  }
+
+  function addMonths(value, count) {
+    const date = value instanceof Date ? value : parseLocalDate(value);
+    return new Date(date.getFullYear(), date.getMonth() + count, 1);
+  }
+
+  function sameMonth(a, b) {
+    return a && b && a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth();
+  }
+
+  function toDateInputValue(date) {
+    if (!date) return "";
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  }
+
+  function formatBillingMonths(value) {
+    const normalized = Number(Number(value || 0).toFixed(2));
+    const wholeMonths = Math.floor(normalized);
+    const weekFactor = Number((normalized - wholeMonths).toFixed(2));
+    const parts = [];
+
+    if (wholeMonths > 0) {
+      parts.push(formatWholeMonths(wholeMonths));
+    }
+    if (weekFactor > 0) {
+      const weekLabel = billingWeekLabel(weekFactor, wholeMonths === 0);
+      parts.push(wholeMonths > 0 ? `ו${weekLabel}` : weekLabel);
+    }
+
+    return parts.length ? parts.join(" ") : "0 חודשים";
+  }
+
+  function billingNumberValue(value) {
+    return Number(Number(value || 0).toFixed(2));
+  }
+
+  function formatWholeMonths(value) {
+    if (value === 1) return "חודש אחד";
+    return `${value} חודשים`;
+  }
+
+  function billingWeekLabel(factor, standalone = false) {
+    if (factor === 0.25) return standalone ? "שבוע אחד" : "שבוע";
+    if (factor === 0.5) return "שבועיים";
+    if (factor === 0.75) return "שלושה שבועות";
+    return `${factor} חודש`;
+  }
+
+  function formatDateForDisplay(value) {
+    const date = parseLocalDate(value);
+    if (!date) return "";
+    return `${String(date.getDate()).padStart(2, "0")}/${String(date.getMonth() + 1).padStart(2, "0")}/${date.getFullYear()}`;
+  }
+
+  function formatMonthForDisplay(value) {
+    const date = parseLocalDate(value);
+    if (!date) return "";
+    return `${String(date.getMonth() + 1).padStart(2, "0")}/${date.getFullYear()}`;
   }
 
   function tuitionDiscountOptions() {
@@ -1676,13 +1969,13 @@
     const months = tuitionMonthsLabel();
     const fullOption =
       (state.values.student_group_year || defaultGroupYear) === defaultGroupYear
-        ? `עלות בחור מליאה - ${amounts.full} דולר לחודש (כפול ${months} חודשים).`
-        : `${amounts.full} דולר לחודש (כפול ${months} חודשים).`;
+        ? `עלות בחור מליאה - ${amounts.full} דולר לחודש (כפול ${months}).`
+        : `${amounts.full} דולר לחודש (כפול ${months}).`;
     const additionalDiscount = additionalDiscountOption;
     if (amounts.discounted == null) return [fullOption, additionalDiscount];
     return [
       fullOption,
-      `אני מבקש את ההנחה הבסיסית – שכר לימוד של ${amounts.discounted} דולר לחודש (כפול ${months} חודשים).`,
+      `אני מבקש את ההנחה הבסיסית – שכר לימוד של ${amounts.discounted} דולר לחודש (כפול ${months}).`,
       additionalDiscount
     ];
   }
@@ -1807,7 +2100,7 @@
     saveDraft(false);
     updateDynamicLabels();
 
-    if (visibilityControllerIds.has(field) || fieldConfig(field)?.inlineOtherField) {
+    if (visibilityControllerIds.has(field) || ["student_group_year", "study_duration"].includes(field) || fieldConfig(field)?.inlineOtherField) {
       renderFields(steps[state.stepIndex]);
     }
   }
@@ -2308,6 +2601,16 @@
         valid = false;
       }
 
+      if (field.type === "date" && field.min && value && parseLocalDate(value) < parseLocalDate(field.min)) {
+        setError(field.id, `לא ניתן לבחור תאריך לפני ${formatDateForDisplay(field.min)}`);
+        valid = false;
+      }
+
+      if (field.id === "study_end_date" && value && state.values.study_start_date && parseLocalDate(value) < parseLocalDate(state.values.study_start_date)) {
+        setError(field.id, "תאריך הסיום חייב להיות אחרי תאריך ההתחלה");
+        valid = false;
+      }
+
       if (
         field.inlineOtherField &&
         ((Array.isArray(value) && value.includes(field.inlineOtherField.option)) || value === field.inlineOtherField.option)
@@ -2559,6 +2862,7 @@
   function buildPayload() {
     const values = state.values;
     const selectedGroup = values.student_group_year || defaultGroupYear;
+    const billingPlan = tuitionBillingPlan();
     const yeshiva5786 = yeshivaValue("5786");
     const yeshiva5785 = values.same_yeshiva_3_years ? yeshiva5786 : yeshivaValue("5785");
     const yeshiva5784 = values.same_yeshiva_3_years ? yeshiva5786 : yeshivaValue("5784");
@@ -2687,6 +2991,13 @@
       arrival_ticket_status: values.arrival_ticket_status || null,
       arrival_date: values.arrival_ticket_status === "יש לי כרטיס" ? values.arrival_date : null,
       study_duration: studyDurationValue(),
+      study_start_date: billingPlan.startDate,
+      study_end_date: billingPlan.endDate,
+      tuition_billing_months: billingNumberValue(billingPlan.months),
+      tuition_deposit_charge_factor: billingNumberValue(billingPlan.preFirstRegularChargeFactor),
+      tuition_first_charge_date: billingPlan.firstChargeDate,
+      tuition_last_charge_date: billingPlan.lastChargeDate,
+      tuition_last_charge_factor: billingNumberValue(billingPlan.lastChargeFactor),
       has_ticket: values.arrival_ticket_status === "יש לי כרטיס",
       media_permission: mediaPermissionValue(),
       media_permission_text: values.media_permission || null,
@@ -2890,7 +3201,11 @@
   }
 
   function tuitionReviewRows() {
+    const plan = tuitionBillingPlan();
     const rows = [
+      ["תקופת לימודים לחיוב", `${formatDateForDisplay(plan.startDate)} - ${formatDateForDisplay(plan.endDate)}`],
+      ["מספר חודשי חיוב", formatBillingMonths(plan.months)],
+      ["תאריך גבייה ראשון", formatDateForDisplay(plan.firstChargeDate)],
       ["מסלול התשלום שנבחר", tuitionPlanReviewValue()]
     ];
     if (state.values.discount_request_type === additionalDiscountOption) {
@@ -3013,6 +3328,12 @@
 
     if (changedField === "student_group_year" && state.values.student_group_year === defaultGroupYear) {
       clearPriorF1Fields();
+    }
+
+    if (["student_group_year", "study_duration"].includes(changedField)) {
+      state.values.study_duration_other = "";
+      if (!shouldAskStudyStartDate()) state.values.study_start_date = "";
+      if (!shouldAskStudyEndDate()) state.values.study_end_date = "";
     }
 
     if (changedField === "student_visa_needed" && state.values.student_visa_needed !== "כן") {
@@ -3510,8 +3831,12 @@
   }
 
   function studyDurationValue() {
-    if (state.values.study_duration === "אחר") return state.values.study_duration_other || "אחר";
-    return state.values.study_duration || "";
+    const plan = tuitionBillingPlan();
+    const duration = state.values.study_duration || "";
+    if (duration === "לא שנה תמימה") {
+      return `לא שנה תמימה - ${formatDateForDisplay(plan.startDate)} עד ${formatDateForDisplay(plan.endDate)}`;
+    }
+    return duration || "שנה תמימה";
   }
 
   function discountCircumstancesValues() {

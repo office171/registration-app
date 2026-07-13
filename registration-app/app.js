@@ -2802,8 +2802,6 @@
       "mother_city",
       "mother_state",
       "mother_zip",
-      "discount_request_type",
-      "tuition_billing_months",
       "tuition_deposit_charge_factor",
       "tuition_last_charge_date",
       "tuition_last_charge_factor"

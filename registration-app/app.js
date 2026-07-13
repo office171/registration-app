@@ -2970,6 +2970,7 @@
       registration_payment_existing_birth_date: values.registration_payment_existing_birth_date || null,
       registration_payment_existing_last_name_en: values.registration_payment_existing_last_name_en || null,
       discount_request_type: values.discount_request_type || null,
+      tuition_charge_amount: tuitionChargeAmountForSheet(values.discount_request_type),
       deposit_terms_accepted: Boolean(values.deposit_terms_accepted),
       dormitory_rules_accepted: Boolean(values.dormitory_rules_accepted),
       dormitory_commitment_presence: Boolean(values.dormitory_commitment_presence),
@@ -3249,6 +3250,14 @@
     const amountMatch = selected.match(/(\d+\s+דולר לחודש(?:\s+\(כפול\s+[^)]+\))?)/);
     if (amountMatch) return amountMatch[1].replace(/\.$/, "");
     return selected;
+  }
+
+  function tuitionChargeAmountForSheet(selected) {
+    const value = String(selected || "").trim();
+    if (!value) return null;
+    if (value.indexOf("הנחה נוספת") !== -1) return "ביקש הנחה";
+    const amountMatch = value.match(/(\d+(?:\.\d+)?)\s+דולר/);
+    return amountMatch ? amountMatch[1] : null;
   }
 
   function healthReviewRows() {

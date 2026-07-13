@@ -99,13 +99,15 @@
           id: "birth_date_he",
           label: "תאריך לידה עברי",
           type: "text",
+          required: true,
           hint: "יש לכתוב תאריך, חודש ושנה."
         },
-        { id: "birth_date", label: "תאריך לידה לועזי", type: "date", required: true, defaultValue: "2006-01-01", reserveHintSpace: true },
+        { id: "birth_date", label: "תאריך לידה לועזי", type: "date", required: true, minAge: 17, calendarOnly: true, reserveHintSpace: true },
         {
           id: "birth_city",
           label: "מקום הלידה - עיר",
           type: "text",
+          required: true,
           autocomplete: "address-level2",
           layout: "full"
         },
@@ -113,6 +115,7 @@
           id: "birth_country",
           label: "מקום הלידה - מדינה",
           type: "text",
+          required: true,
           autocomplete: "country-name",
           layout: "full"
         },
@@ -120,6 +123,7 @@
           id: "birth_zip",
           label: "מקום הלידה - מיקוד",
           type: "text",
+          required: true,
           autocomplete: "postal-code",
           layout: "full"
         },
@@ -360,6 +364,15 @@
           options: ["כן", "לא"],
           required: true,
           showWhenNotContains: { field: "citizenships", value: "ארה״ב" }
+        },
+        {
+          id: "visa_passport_choice",
+          label: "על איזה דרכון להוציא את הוויזה?",
+          type: "select",
+          options: visaPassportOptions,
+          required: true,
+          layout: "full",
+          visibleWhen: () => state.values.student_visa_needed === "כן" && visaPassportOptions().length > 1
         },
         {
           id: "prior_f1_visa_during_group",
@@ -1095,7 +1108,7 @@
           id: "response_recipient",
           label: "לאיזו כתובת דוא\"ל תרצו שנשלח את תשובת הרישום?",
           type: "radio",
-          options: ["כתובת הדוא\"ל של האב", "כתובת הדוא\"ל של האם", "כתובת הדוא\"ל של התלמיד"],
+          options: responseRecipientOptions,
           required: true
         }
       ]
@@ -1431,6 +1444,15 @@
     input.disabled = isDisabled(field);
     if (field.defaultValue && state.values[field.id] === undefined) state.values[field.id] = field.defaultValue;
     input.value = state.values[field.id] || field.defaultValue || "";
+    if (field.type === "date" && field.minAge) input.max = maxBirthDateForAge(field.minAge);
+    if (field.type === "date" && field.calendarOnly) {
+      input.addEventListener("keydown", (event) => {
+        if (["Tab", "Shift", "ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(event.key)) return;
+        event.preventDefault();
+      });
+      input.addEventListener("paste", (event) => event.preventDefault());
+      input.addEventListener("drop", (event) => event.preventDefault());
+    }
     input.addEventListener("input", onInput);
     if (field.unit) {
       const inputWrap = document.createElement("div");
@@ -2258,6 +2280,11 @@
         valid = false;
       }
 
+      if (field.type === "date" && field.minAge && value && !isAtLeastAge(value, field.minAge)) {
+        setError(field.id, `תאריך הלידה חייב להיות לפני גיל ${field.minAge} לפחות`);
+        valid = false;
+      }
+
       if (
         field.inlineOtherField &&
         ((Array.isArray(value) && value.includes(field.inlineOtherField.option)) || value === field.inlineOtherField.option)
@@ -2545,6 +2572,8 @@
       visa: visaValue(),
       visa_other: values.arrival_visa === "אחר" ? values.arrival_visa_other || null : null,
       needs_student_visa: values.student_visa_needed === "כן",
+      visa_passport_choice: values.visa_passport_choice || null,
+      visa_passport_number: selectedVisaPassportNumber() || null,
       prior_f1_visa_during_group: priorF1DisplayValue() || null,
       prior_f1_visa_valid: priorF1ValidDisplayValue() || null,
       prior_f1_visa_expiration: values.prior_f1_visa_expiration || null,
@@ -2780,6 +2809,7 @@
   function visaReviewRows() {
     return [
       ["סוג האשרה", visaDisplayValue()],
+      ["דרכון לויזה", selectedVisaPassportNumber()],
       ["ויזת F-1 במהלך הקבוצה", priorF1DisplayValue()],
       ["תוקף ויזת F-1", priorF1ValidDisplayValue()]
     ];
@@ -2886,6 +2916,8 @@
   }
 
   function isVisible(field) {
+    if (field.visibleWhen && !field.visibleWhen()) return false;
+
     if (field.hideWhen) {
       const hiddenValue = state.values[field.hideWhen.field];
       if (field.hideWhen.equals !== undefined && hiddenValue === field.hideWhen.equals) return false;
@@ -2926,6 +2958,21 @@
   }
 
   function applyLinkedFieldRules(changedField) {
+    if (["student_email", "father_email", "mother_email"].includes(changedField)) {
+      const options = responseRecipientOptions();
+      if (state.values.response_recipient && !options.includes(state.values.response_recipient)) {
+        state.values.response_recipient = "";
+      }
+    }
+
+    if (["citizenships", "citizenship_other", "israeli_passport_number", "french_passport_number", "other_passport_number", "student_visa_needed"].includes(changedField)) {
+      const options = visaPassportOptions();
+      if (state.values.visa_passport_choice && !options.includes(state.values.visa_passport_choice)) {
+        state.values.visa_passport_choice = "";
+      }
+      if (state.values.student_visa_needed !== "כן") state.values.visa_passport_choice = "";
+    }
+
     if (changedField === "student_group_year" && state.values.student_group_year !== defaultGroupYear) {
       state.values.same_yeshiva_3_years = false;
       state.values.yeshiva_5785 = "";
@@ -3070,6 +3117,11 @@
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized);
   }
 
+  function isStrictEmail(value) {
+    const normalized = String(value || "").trim();
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized);
+  }
+
   function isValidIsraeliId(value) {
     const digits = String(value || "").replace(/\D/g, "");
     if (!digits || digits.length > 9) return false;
@@ -3083,6 +3135,39 @@
     }
 
     return sum % 10 === 0;
+  }
+
+  function maxBirthDateForAge(age) {
+    const date = new Date();
+    date.setFullYear(date.getFullYear() - age);
+    return formatDateInputValue(date);
+  }
+
+  function isAtLeastAge(value, age) {
+    const birthDate = parseDateInputValue(value);
+    if (!birthDate) return false;
+    return birthDate <= parseDateInputValue(maxBirthDateForAge(age));
+  }
+
+  function parseDateInputValue(value) {
+    const match = String(value || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (!match) return null;
+    const date = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+    if (
+      date.getFullYear() !== Number(match[1]) ||
+      date.getMonth() !== Number(match[2]) - 1 ||
+      date.getDate() !== Number(match[3])
+    ) {
+      return null;
+    }
+    return date;
+  }
+
+  function formatDateInputValue(date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
   }
 
   function isEmpty(value) {
@@ -3153,10 +3238,47 @@
     return "father";
   }
 
+  function responseRecipientOptions() {
+    const options = [];
+    if (isStrictEmail(state.values.father_email)) options.push("כתובת הדוא\"ל של האב");
+    if (isStrictEmail(state.values.mother_email)) options.push("כתובת הדוא\"ל של האם");
+    if (isStrictEmail(state.values.student_email)) options.push("כתובת הדוא\"ל של התלמיד");
+    return options;
+  }
+
   function responseEmailValue() {
     if (state.values.response_recipient === "אימייל התלמיד" || state.values.response_recipient === "כתובת הדוא\"ל של התלמיד") return state.values.student_email || "";
     if (state.values.response_recipient === "אימייל האם" || state.values.response_recipient === "כתובת הדוא\"ל של האם") return state.values.mother_email || "";
     return state.values.father_email || "";
+  }
+
+  function visaPassportOptions() {
+    return visaPassportEntries().map((entry) => entry.label);
+  }
+
+  function visaPassportEntries() {
+    const entries = [];
+    const citizenships = state.values.citizenships || [];
+    if (citizenships.includes("ישראל") && state.values.israeli_passport_number) {
+      entries.push({ label: "דרכון ישראלי", number: state.values.israeli_passport_number });
+    }
+    if (citizenships.includes("צרפת") && state.values.french_passport_number) {
+      entries.push({ label: "דרכון צרפתי", number: state.values.french_passport_number });
+    }
+    if (citizenships.includes("אחר") && state.values.other_passport_number) {
+      const citizenship = state.values.citizenship_other ? ` ${state.values.citizenship_other}` : " אחר";
+      entries.push({ label: `דרכון${citizenship}`, number: state.values.other_passport_number });
+    }
+    return entries;
+  }
+
+  function selectedVisaPassportNumber() {
+    if (state.values.student_visa_needed !== "כן") return "";
+    const entries = visaPassportEntries();
+    if (!entries.length) return "";
+    if (entries.length === 1) return entries[0].number;
+    const selected = entries.find((entry) => entry.label === state.values.visa_passport_choice);
+    return selected ? selected.number : "";
   }
 
   function citizenshipValues() {

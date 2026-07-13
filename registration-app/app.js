@@ -2761,11 +2761,12 @@
   async function submitToGoogle(payload) {
     setSubmissionProgress(1);
     const files = await collectFilesForGoogle();
+    const googlePayload = googleCompatiblePayload(payload);
     setSubmissionProgress(2);
     const response = await fetch(config.GOOGLE_APPS_SCRIPT_URL, {
       method: "POST",
       body: JSON.stringify({
-        payload,
+        payload: googlePayload,
         files
       })
     });
@@ -2781,6 +2782,35 @@
     }
     finishSubmissionProgress();
     return result;
+  }
+
+  function googleCompatiblePayload(payload) {
+    const copy = { ...payload };
+    [
+      "citizenship_other",
+      "parents_street",
+      "parents_city",
+      "parents_state",
+      "parents_zip",
+      "father_address_not_relevant",
+      "father_street",
+      "father_city",
+      "father_state",
+      "father_zip",
+      "mother_address_not_relevant",
+      "mother_street",
+      "mother_city",
+      "mother_state",
+      "mother_zip",
+      "discount_request_type",
+      "tuition_billing_months",
+      "tuition_deposit_charge_factor",
+      "tuition_last_charge_date",
+      "tuition_last_charge_factor"
+    ].forEach((fieldId) => {
+      delete copy[fieldId];
+    });
+    return copy;
   }
 
   function startSubmissionProgress() {

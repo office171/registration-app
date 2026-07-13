@@ -4,11 +4,6 @@
   const DEV_SKIP_PAYMENT_VALIDATION = false;
   const config = window.APP_CONFIG || {};
   const formStartedAt = new Date().toISOString();
-  try {
-    localStorage.removeItem(STORAGE_KEY);
-  } catch {
-    // Ignore storage access errors in private browsing modes.
-  }
 
   const yeshivaOptions = [
     "אור יהודה",
@@ -1666,12 +1661,12 @@
   }
 
   function tuitionMonthsLabel() {
-    return (state.values.student_group_year || defaultGroupYear) === "קבוצה תשפ\"ו" ? "12" : "14.5";
+    return (state.values.student_group_year || defaultGroupYear) === "קבוצה תשפ\"ו" ? "13" : "14.5";
   }
 
   function tuitionPeriodText() {
     if ((state.values.student_group_year || defaultGroupYear) === "קבוצה תשפ\"ו") {
-      return "שכר הלימוד מחושב על פי תקופה של 12 חודשים (מז' חשון תשפ\"ז ועד ז' בחשון תשפ\"ח), ולכן שכר הלימוד מחושב בהתאם לתקופה זו.";
+      return "שכר הלימוד מחושב על פי תקופה של 13 חודשים (מז' חשון תשפ\"ז ועד ז' בחשון תשפ\"ח), ולכן שכר הלימוד מחושב בהתאם לתקופה זו.";
     }
     return "שכר הלימוד מחושב על פני תקופה של 14.5 חודשים (מט\"ו אלול תשפ\"ו ועד ז' בחשון תשפ\"ח), ולכן שכר הלימוד הכולל מחושב בהתאם לתקופה זו.";
   }
@@ -1808,6 +1803,7 @@
     }
 
     applyLinkedFieldRules(field);
+    invalidateExistingPaymentWhenIdentityChanges(field);
     saveDraft(false);
     updateDynamicLabels();
 
@@ -1932,18 +1928,18 @@
       <div class="already-paid-header">
         <div>
           <strong>כבר שילמתי דמי הרשמה</strong>
-          <span>הכניסו תאריך לידה לועזי ושם משפחה באנגלית. המערכת תבדוק אם קיים תשלום קודם.</span>
+          <span>המערכת תבדוק אם קיים תשלום קודם לפי תאריך הלידה ושם המשפחה באנגלית של התלמיד בטופס.</span>
         </div>
         <button type="button" class="payment-button secondary-payment-button already-paid-cancel">בטל</button>
       </div>
       <div class="already-paid-fields">
         <label>
           <span>תאריך לידה לועזי</span>
-          <input type="date" data-payment-lookup="registration_payment_existing_birth_date" value="${escapeHtml(state.values.registration_payment_existing_birth_date || state.values.birth_date || "")}">
+          <input type="date" value="${escapeHtml(state.values.birth_date || "")}" disabled>
         </label>
         <label>
           <span>שם משפחה באנגלית</span>
-          <input type="text" dir="ltr" data-payment-lookup="registration_payment_existing_last_name_en" value="${escapeHtml(state.values.registration_payment_existing_last_name_en || state.values.student_last_name_en || "")}">
+          <input type="text" dir="ltr" value="${escapeHtml(state.values.student_last_name_en || "")}" disabled>
         </label>
       </div>
       <button type="button" class="payment-button already-paid-verify">${checking ? "בודק..." : "בדוק תשלום קודם"}</button>
@@ -1953,14 +1949,6 @@
       clearExistingPaymentLookup();
       saveDraft(false);
       render();
-    });
-
-    box.querySelectorAll("[data-payment-lookup]").forEach((input) => {
-      input.addEventListener("input", (event) => {
-        state.values[event.target.dataset.paymentLookup] = event.target.value;
-        if (state.values.registration_payment_status === "already_paid") state.values.registration_payment_status = "existing_lookup";
-        saveDraft(false);
-      });
     });
 
     const verifyButton = box.querySelector(".already-paid-verify");
@@ -1973,8 +1961,7 @@
   function openExistingPaymentLookup() {
     state.values.registration_payment_status = "existing_lookup";
     state.values.registration_payment_session_id = "";
-    state.values.registration_payment_existing_birth_date = state.values.registration_payment_existing_birth_date || state.values.birth_date || "";
-    state.values.registration_payment_existing_last_name_en = state.values.registration_payment_existing_last_name_en || state.values.student_last_name_en || "";
+    setExistingPaymentLookupFromCurrentStudent();
     saveDraft(false);
     render();
   }
@@ -1983,13 +1970,39 @@
     state.values.registration_payment_status = "";
     state.values.registration_payment_session_id = "";
     state.values.registration_payment_paid_at = null;
+    state.values.registration_payment_existing_birth_date = "";
+    state.values.registration_payment_existing_last_name_en = "";
+  }
+
+  function setExistingPaymentLookupFromCurrentStudent() {
+    state.values.registration_payment_existing_birth_date = state.values.birth_date || "";
+    state.values.registration_payment_existing_last_name_en = state.values.student_last_name_en || "";
+  }
+
+  function existingPaymentLookupMatchesCurrentStudent() {
+    return (
+      state.values.registration_payment_existing_birth_date === (state.values.birth_date || "") &&
+      normalizePaymentLookupValue(state.values.registration_payment_existing_last_name_en) === normalizePaymentLookupValue(state.values.student_last_name_en)
+    );
+  }
+
+  function invalidateExistingPaymentWhenIdentityChanges(field) {
+    if (!["birth_date", "student_last_name_en"].includes(field)) return;
+
+    if (["already_paid", "existing_lookup", "existing_verifying", "existing_failed"].includes(state.values.registration_payment_status)) {
+      state.values.registration_payment_status = "existing_lookup";
+      state.values.registration_payment_session_id = "";
+      state.values.registration_payment_paid_at = null;
+      setExistingPaymentLookupFromCurrentStudent();
+    }
+  }
+
+  function normalizePaymentLookupValue(value) {
+    return String(value || "").trim().toLowerCase().replace(/\s+/g, " ");
   }
 
   function hasAlreadyPaidLookupDetails() {
-    return Boolean(
-      (state.values.registration_payment_existing_birth_date || state.values.birth_date) &&
-      (state.values.registration_payment_existing_last_name_en || state.values.student_last_name_en)
-    );
+    return Boolean(state.values.birth_date && state.values.student_last_name_en);
   }
 
   function shouldShowExistingPaymentLookup() {
@@ -2115,8 +2128,7 @@
 
   async function verifyExistingRegistrationPayment(button) {
     formError.textContent = "";
-    state.values.registration_payment_existing_birth_date = state.values.registration_payment_existing_birth_date || state.values.birth_date || "";
-    state.values.registration_payment_existing_last_name_en = state.values.registration_payment_existing_last_name_en || state.values.student_last_name_en || "";
+    setExistingPaymentLookupFromCurrentStudent();
 
     if (!hasAlreadyPaidLookupDetails()) {
       formError.textContent = "יש למלא תאריך לידה לועזי ושם משפחה באנגלית.";
@@ -2136,12 +2148,13 @@
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          birthDate: state.values.registration_payment_existing_birth_date,
-          lastNameEn: state.values.registration_payment_existing_last_name_en
+          birthDate: state.values.birth_date,
+          lastNameEn: state.values.student_last_name_en
         })
       });
       const result = await response.json().catch(() => ({}));
       if (!response.ok || !result.paid) throw new Error(result.error || "לא נמצא תשלום קודם.");
+      if (!existingPaymentResultMatchesCurrentStudent(result)) throw new Error("התשלום שנמצא אינו תואם לפרטי התלמיד בטופס.");
 
       state.values.registration_payment_status = "already_paid";
       state.values.registration_payment_session_id = result.paymentIntentId || result.sessionId || "existing-payment";
@@ -2167,8 +2180,18 @@
 
   function isRegistrationPaymentPaid() {
     if (DEV_SKIP_PAYMENT_VALIDATION && state.values.registration_payment_status === "dev_skipped") return true;
-    if (state.values.registration_payment_status === "already_paid") return Boolean(state.values.registration_payment_session_id);
+    if (state.values.registration_payment_status === "already_paid") {
+      return Boolean(state.values.registration_payment_session_id) && existingPaymentLookupMatchesCurrentStudent();
+    }
     return state.values.registration_payment_status === "paid" && Boolean(state.values.registration_payment_session_id);
+  }
+
+  function existingPaymentResultMatchesCurrentStudent(result) {
+    if (!result.birthDate && !result.lastNameEn) return true;
+    return (
+      result.birthDate === (state.values.birth_date || "") &&
+      normalizePaymentLookupValue(result.lastNameEn) === normalizePaymentLookupValue(state.values.student_last_name_en)
+    );
   }
 
   function nextStep() {
@@ -2361,7 +2384,7 @@
 
       if (hasGoogleWebhook) {
         await submitToGoogle(payload);
-        sessionStorage.removeItem(STORAGE_KEY);
+        clearDraftStorage();
         showSuccess();
         return;
       }
@@ -2376,7 +2399,7 @@
       const registrationId = registration[0].id;
       setSubmissionProgress(3);
       await uploadAllFiles(registrationId);
-      sessionStorage.removeItem(STORAGE_KEY);
+      clearDraftStorage();
       finishSubmissionProgress();
       showSuccess();
     } catch (error) {
@@ -2389,7 +2412,13 @@
 
   async function ensureRegistrationPaymentVerified() {
     if (DEV_SKIP_PAYMENT_VALIDATION && state.values.registration_payment_status === "dev_skipped") return true;
-    if (state.values.registration_payment_status === "already_paid" && state.values.registration_payment_session_id) return true;
+    if (
+      state.values.registration_payment_status === "already_paid" &&
+      state.values.registration_payment_session_id &&
+      existingPaymentLookupMatchesCurrentStudent()
+    ) {
+      return true;
+    }
 
     const paymentStepIndex = steps.findIndex((step) => step.id === "registration_payment");
     if (!isRegistrationPaymentPaid()) {
@@ -3201,7 +3230,7 @@
   }
 
   function saveDraft(showMessage = true) {
-    sessionStorage.setItem(STORAGE_KEY, JSON.stringify({
+    setDraftStorage(JSON.stringify({
       values: state.values,
       stepIndex: state.stepIndex
     }));
@@ -3215,7 +3244,7 @@
 
   function loadDraft() {
     try {
-      const draft = JSON.parse(sessionStorage.getItem(STORAGE_KEY) || "{}");
+      const draft = JSON.parse(getDraftStorage() || "{}");
       return draft && typeof draft === "object" && "values" in draft ? draft.values || {} : draft;
     } catch {
       return {};
@@ -3224,11 +3253,61 @@
 
   function loadDraftStep() {
     try {
-      const draft = JSON.parse(sessionStorage.getItem(STORAGE_KEY) || "{}");
+      const draft = JSON.parse(getDraftStorage() || "{}");
       const stepIndex = Number(draft?.stepIndex);
       return Number.isInteger(stepIndex) && stepIndex >= 0 && stepIndex < steps.length ? stepIndex : 0;
     } catch {
       return 0;
+    }
+  }
+
+  function getDraftStorage() {
+    try {
+      const persistentDraft = localStorage.getItem(STORAGE_KEY);
+      if (persistentDraft) return persistentDraft;
+    } catch {
+      // Ignore storage access errors in private browsing modes.
+    }
+
+    try {
+      const tabDraft = sessionStorage.getItem(STORAGE_KEY);
+      if (tabDraft) {
+        setDraftStorage(tabDraft);
+        return tabDraft;
+      }
+    } catch {
+      // Ignore storage access errors in private browsing modes.
+    }
+
+    return null;
+  }
+
+  function setDraftStorage(value) {
+    try {
+      localStorage.setItem(STORAGE_KEY, value);
+      return;
+    } catch {
+      // Fall back to tab-only storage if persistent storage is unavailable.
+    }
+
+    try {
+      sessionStorage.setItem(STORAGE_KEY, value);
+    } catch {
+      // Ignore storage access errors in private browsing modes.
+    }
+  }
+
+  function clearDraftStorage() {
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+    } catch {
+      // Ignore storage access errors in private browsing modes.
+    }
+
+    try {
+      sessionStorage.removeItem(STORAGE_KEY);
+    } catch {
+      // Ignore storage access errors in private browsing modes.
     }
   }
 

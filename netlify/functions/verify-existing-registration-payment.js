@@ -36,7 +36,9 @@ exports.handler = async (event) => {
       amountUsd: REGISTRATION_FEE_CENTS / 100,
       currency: REGISTRATION_FEE_CURRENCY,
       paidAt: manualPayment.paidAt,
-      source: "manual"
+      source: "manual",
+      birthDate: manualPayment.birthDate,
+      lastNameEn: manualPayment.lastNameEn
     });
   }
 
@@ -75,7 +77,9 @@ exports.handler = async (event) => {
     paymentIntentId: paymentIntent.id,
     amountUsd: paymentIntent.amount_received / 100,
     currency: paymentIntent.currency,
-    paidAt: paidAt(paymentIntent)
+    paidAt: paidAt(paymentIntent),
+    birthDate: paymentIntent.metadata?.registration_birth_date || birthDate,
+    lastNameEn: paymentIntent.metadata?.registration_last_name_en || lastNameEn
   });
 };
 

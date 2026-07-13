@@ -2325,7 +2325,7 @@
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           amountUsd: field.amountUsd,
-          studentEmail: state.values.student_email || "",
+          studentEmail: stripeCustomerEmail(),
           studentName: `${state.values.student_first_name_en || state.values.student_first_name_he || ""} ${state.values.student_last_name_en || state.values.student_last_name_he || ""}`.trim(),
           birthDate: state.values.birth_date || "",
           lastNameEn: state.values.student_last_name_en || ""
@@ -3495,6 +3495,11 @@
     const normalized = String(value || "").trim();
     if (normalized === "אין לי") return true;
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized);
+  }
+
+  function stripeCustomerEmail() {
+    const normalized = String(state.values.student_email || "").trim();
+    return isStrictEmail(normalized) ? normalized : "";
   }
 
   function isStrictEmail(value) {

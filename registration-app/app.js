@@ -1,7 +1,8 @@
 (function () {
   const STORAGE_KEY = "kvutze-registration-draft-v1";
-  const DEV_SKIP_REQUIRED_VALIDATION = false;
-  const DEV_SKIP_PAYMENT_VALIDATION = isLocalPreview();
+  const INTERNAL_TEST_MODE = isInternalTestMode();
+  const DEV_SKIP_REQUIRED_VALIDATION = INTERNAL_TEST_MODE;
+  const DEV_SKIP_PAYMENT_VALIDATION = isLocalPreview() || INTERNAL_TEST_MODE;
   const config = window.APP_CONFIG || {};
   const formStartedAt = new Date().toISOString();
   const PROGRAM_END_DATE = "2027-11-07";
@@ -12,6 +13,11 @@
 
   function isLocalPreview() {
     return ["localhost", "127.0.0.1", "::1"].includes(window.location.hostname);
+  }
+
+  function isInternalTestMode() {
+    if (!isLocalPreview()) return false;
+    return new URLSearchParams(window.location.search).get("internal_test") === "1";
   }
 
   const yeshivaOptions = [
@@ -652,7 +658,7 @@
         { id: "medical_measurements_section", type: "section", label: "נתונים רפואיים כלליים" },
         { id: "weight", label: "משקל", type: "text", unit: 'ק"ג' },
         { id: "height", label: "גובה", type: "text", unit: 'ס"מ' },
-        { id: "last_tetanus_date", label: "תאריך חיסון טטנוס אחרון", type: "date" },
+        { id: "last_tetanus_date", label: "תאריך חיסון טטנוס אחרון", type: "date", required: true },
         { id: "allergies_section", type: "section", label: "אלרגיות ורגישויות" },
         {
           id: "special_diet",
@@ -1208,6 +1214,7 @@
 
     renderSteps();
     renderFields(step);
+    renderInternalTestTools();
 
     const editingFromReview = state.returnToReviewFromStep === step.id;
     prevBtn.disabled = state.stepIndex === 0;
@@ -1221,6 +1228,19 @@
 
   function renderSteps() {
     stepList.innerHTML = "";
+  }
+
+  function renderInternalTestTools() {
+    if (!INTERNAL_TEST_MODE) return;
+    const tools = document.createElement("div");
+    tools.className = "internal-test-tools";
+    tools.innerHTML = `
+      <strong>מצב בדיקה פנימי</strong>
+      <span>שדות חובה, קבצים ותשלום ידולגו לצורך בדיקה מקומית בלבד.</span>
+      <button type="button" class="secondary" data-fill-internal-test>מלא דמה וקפוץ לסקירה</button>
+    `;
+    formFields.appendChild(tools);
+    tools.querySelector("[data-fill-internal-test]").addEventListener("click", fillInternalTestDataAndReview);
   }
 
   function renderFields(step) {
@@ -2311,6 +2331,62 @@
     render();
   }
 
+  function fillInternalTestDataAndReview() {
+    if (!INTERNAL_TEST_MODE) return;
+    const stamp = new Date().toISOString().replace(/[-:.TZ]/g, "").slice(0, 12);
+    Object.assign(state.values, {
+      student_last_name_he: state.values.student_last_name_he || `בדיקה ${stamp}`,
+      student_first_name_he: state.values.student_first_name_he || "תלמיד",
+      student_last_name_en: state.values.student_last_name_en || `Test${stamp}`,
+      student_first_name_en: state.values.student_first_name_en || "Student",
+      birth_date_he: state.values.birth_date_he || "י' ניסן תשס\"ח",
+      birth_date: state.values.birth_date || "2008-04-15",
+      birth_city: state.values.birth_city || "Brooklyn",
+      birth_country: state.values.birth_country || "USA",
+      birth_zip: state.values.birth_zip || "11213",
+      student_group_year: state.values.student_group_year || defaultGroupYear,
+      yeshiva_5786: state.values.yeshiva_5786 || "כפר חב\"ד",
+      same_yeshiva_3_years: state.values.same_yeshiva_3_years ?? true,
+      student_email: state.values.student_email || "אין לי",
+      citizenships: state.values.citizenships?.length ? state.values.citizenships : ["ארה״ב"],
+      us_passport_number: state.values.us_passport_number || "TEST123456",
+      us_social_security_number: state.values.us_social_security_number || "000-00-0000",
+      passport_document: state.values.passport_document || null,
+      student_about: state.values.student_about || "נתוני בדיקה פנימיים.",
+      arrival_ticket_status: state.values.arrival_ticket_status || "אין לי עדיין כרטיס - אעדכן בהמשך",
+      study_duration: state.values.study_duration || "שנה תמימה",
+      student_visa_needed: state.values.student_visa_needed || "לא",
+      parents_live_together: state.values.parents_live_together || "כן",
+      father_name: state.values.father_name || "אב בדיקה",
+      father_phone: state.values.father_phone || "0000000000",
+      father_email: state.values.father_email || "אין לי",
+      mother_name: state.values.mother_name || "אם בדיקה",
+      mother_phone: state.values.mother_phone || "0000000000",
+      mother_email: state.values.mother_email || "אין לי",
+      parents_street: state.values.parents_street || "770 Eastern Parkway",
+      parents_city: state.values.parents_city || "Brooklyn",
+      parents_state: state.values.parents_state || "NY",
+      parents_zip: state.values.parents_zip || "11213",
+      discount_request_type: state.values.discount_request_type || tuitionDiscountOptions()[0],
+      deposit_terms_accepted: state.values.deposit_terms_accepted ?? true,
+      dormitory_rules_accepted: state.values.dormitory_rules_accepted ?? true,
+      emergency_name: state.values.emergency_name || "איש קשר בדיקה",
+      emergency_phone: state.values.emergency_phone || "0000000000",
+      emergency_relation: state.values.emergency_relation || "משפחה",
+      media_permission: state.values.media_permission || "אני מאשר למכון חנה להשתמש בתמונות ובסרטונים בהם אני מופיע.",
+      response_recipient: state.values.response_recipient || "התלמיד",
+      final_confirmation: true,
+      registration_payment_status: "dev_skipped",
+      registration_payment_session_id: "dev-skip",
+      registration_payment_amount_usd: 10,
+      registration_payment_paid_at: null
+    });
+    state.stepIndex = steps.findIndex((step) => step.id === "review");
+    saveDraft(false);
+    render();
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
   async function startRegistrationPayment(field, button = document.querySelector(".registration-payment-start")) {
     if (button) {
       button.disabled = true;
@@ -2633,6 +2709,7 @@
   }
 
   function missingRequiredFiles() {
+    if (INTERNAL_TEST_MODE) return [];
     const missing = [];
     steps.forEach((step) => {
       if (step.isReview || !stepHasVisibleFields(step)) return;
@@ -2714,6 +2791,14 @@
   }
 
   async function ensureRegistrationPaymentVerified() {
+    if (INTERNAL_TEST_MODE) {
+      state.values.registration_payment_status = "dev_skipped";
+      state.values.registration_payment_session_id = "dev-skip";
+      state.values.registration_payment_amount_usd = 10;
+      state.values.registration_payment_paid_at = null;
+      saveDraft(false);
+      return true;
+    }
     if (DEV_SKIP_PAYMENT_VALIDATION && state.values.registration_payment_status === "dev_skipped") return true;
     if (
       state.values.registration_payment_status === "already_paid" &&
@@ -2852,7 +2937,20 @@
         });
       });
 
+    if (INTERNAL_TEST_MODE && !files.some((file) => file.field_id === "student_photo")) {
+      files.push(internalTestPhotoFile());
+    }
+
     return files;
+  }
+
+  function internalTestPhotoFile() {
+    return {
+      field_id: "student_photo",
+      name: "internal-test-photo.png",
+      type: "image/png",
+      data: "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p9sAAAAASUVORK5CYII="
+    };
   }
 
   function fileToBase64(file) {

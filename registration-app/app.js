@@ -10,6 +10,14 @@
   const GROUP_5786_FULL_YEAR_START_DATE = "2026-10-01";
   const MIN_STUDY_START_DATE = "2026-08-27";
   const FIRST_REGULAR_TUITION_CHARGE_DATE = "2026-09-01";
+  const MAX_FILE_BYTES = {
+    student_photo: 5 * 1024 * 1024,
+    passport_document: 8 * 1024 * 1024,
+    health_document: 8 * 1024 * 1024
+  };
+  const MAX_TOTAL_UPLOAD_BYTES = 20 * 1024 * 1024;
+  const ALLOWED_FILE_EXTENSIONS = ["pdf", "jpg", "jpeg", "png", "webp", "gif", "bmp", "tif", "tiff", "avif", "heic", "heif"];
+  const COMPRESSIBLE_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
   function isLocalPreview() {
     return ["localhost", "127.0.0.1", "::1"].includes(window.location.hostname);
@@ -1152,6 +1160,7 @@
     signatures: {},
     returnToReviewFromStep: null
   };
+  state.values._submission_attempt_id = state.values._submission_attempt_id || createSubmissionAttemptId();
   ensureDefaultValues();
 
   const stepList = document.getElementById("stepList");
@@ -1507,13 +1516,25 @@
     input.type = "file";
     input.className = "file-picker";
     if (field.multiple) input.multiple = true;
-    if (field.accept) input.accept = field.accept;
+    input.accept = field.accept || ".pdf,.jpg,.jpeg,.png,.webp,.gif,.bmp,.tif,.tiff,.avif,.heic,.heif,image/*,application/pdf";
     input.disabled = isDisabled(field);
 
     let fileMode = "add";
-    input.addEventListener("change", (event) => {
-      const selectedFiles = Array.from(event.target.files || []);
+    input.addEventListener("change", async (event) => {
+      let selectedFiles = Array.from(event.target.files || []);
       if (!selectedFiles.length) return;
+
+      try {
+        selectedFiles.forEach((file) => validateSelectedFileType(file));
+        selectedFiles = await Promise.all(selectedFiles.map((file) => prepareSelectedFile(field.id, file)));
+        validateTotalSelectedFileSize(field.id, selectedFiles, field.multiple);
+        setError(field.id, "");
+      } catch (error) {
+        input.value = "";
+        setError(field.id, error.message);
+        formError.textContent = error.message;
+        return;
+      }
 
       if (field.multiple) {
         const currentFiles = fileMode === "replace" ? [] : fileList(state.files[field.id]).filter(Boolean);
@@ -1590,6 +1611,59 @@
 
     control.appendChild(actions);
     return control;
+  }
+
+  function createSubmissionAttemptId() {
+    if (window.crypto?.randomUUID) return `REG-${window.crypto.randomUUID().slice(0, 8).toUpperCase()}`;
+    return `REG-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
+  }
+
+  function validateSelectedFileType(file) {
+    const extension = String(file.name || "").split(".").pop().toLowerCase();
+    if (!ALLOWED_FILE_EXTENSIONS.includes(extension)) {
+      throw new Error(`סוג הקובץ ${extension ? `.${extension}` : "שנבחר"} אינו נתמך. ניתן להעלות PDF או קובץ תמונה.`);
+    }
+  }
+
+  async function prepareSelectedFile(fieldId, file) {
+    const limit = MAX_FILE_BYTES[fieldId] || 8 * 1024 * 1024;
+    let prepared = file;
+    if (COMPRESSIBLE_IMAGE_TYPES.includes(file.type) && file.size > 900 * 1024) {
+      prepared = await compressImageFile(file, fieldId === "passport_document" ? 2200 : 1600, fieldId === "passport_document" ? 0.9 : 0.84);
+    }
+    if (prepared.size > limit) {
+      throw new Error(`${file.name} גדול מדי גם לאחר הקטנה. הגודל המרבי הוא ${Math.round(limit / 1024 / 1024)}MB.`);
+    }
+    return prepared;
+  }
+
+  async function compressImageFile(file, maxDimension, quality) {
+    try {
+      const bitmap = await createImageBitmap(file);
+      const scale = Math.min(1, maxDimension / Math.max(bitmap.width, bitmap.height));
+      if (scale === 1 && file.size < 2 * 1024 * 1024) return file;
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+      canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+      canvas.getContext("2d").drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+      bitmap.close?.();
+      const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", quality));
+      if (!blob || blob.size >= file.size) return file;
+      return new File([blob], file.name.replace(/\.[^.]+$/, "") + ".jpg", { type: "image/jpeg", lastModified: file.lastModified });
+    } catch {
+      return file;
+    }
+  }
+
+  function validateTotalSelectedFileSize(fieldId, newFiles, multiple) {
+    let total = 0;
+    Object.entries(state.files).forEach(([id, value]) => {
+      if (id === fieldId) return;
+      fileList(value).forEach((file) => { total += Number(file?.size || 0); });
+    });
+    const current = multiple ? fileList(state.files[fieldId]) : [];
+    [...current, ...newFiles].forEach((file) => { total += Number(file?.size || 0); });
+    if (total > MAX_TOTAL_UPLOAD_BYTES) throw new Error("סך כל הקבצים גדול מ־20MB. נא להסיר או להקטין אחד מהקבצים.");
   }
 
   function resolveList(value) {
@@ -2784,7 +2858,9 @@
       showSuccess();
     } catch (error) {
       stopSubmissionProgress();
-      formError.textContent = error.message || "השליחה נכשלה. נסה שוב.";
+      const attemptId = state.values._submission_attempt_id;
+      const message = error.message || "השליחה נכשלה. נסה שוב.";
+      formError.textContent = `${message}${attemptId && !message.includes(attemptId) ? ` מזהה ניסיון: ${attemptId}` : ""}`;
       submitBtn.disabled = false;
       submitBtn.textContent = "שלח הרשמה";
     }
@@ -2863,7 +2939,8 @@
 
     const result = await response.json().catch(() => ({}));
     if (!result?.ok) {
-      throw new Error(result?.error || "השליחה ל-Google נכשלה.");
+      const attemptId = result?.attempt_id || state.values._submission_attempt_id;
+      throw new Error(`${result?.error || "השליחה ל-Google נכשלה."}${attemptId ? ` מזהה ניסיון: ${attemptId}` : ""}`);
     }
     finishSubmissionProgress();
     return result;
@@ -2939,6 +3016,9 @@
 
     if (INTERNAL_TEST_MODE && !files.some((file) => file.field_id === "student_photo")) {
       files.push(internalTestPhotoFile());
+    }
+    if (INTERNAL_TEST_MODE && !files.some((file) => file.field_id === "passport_document")) {
+      files.push({ ...internalTestPhotoFile(), field_id: "passport_document", name: "internal-test-passport.png" });
     }
 
     return files;
@@ -3107,6 +3187,7 @@
       media_permission_text: values.media_permission || null,
       media_signature_signed_at: values.media_signature ? new Date().toISOString() : null,
       _form_started_at: formStartedAt,
+      _submission_attempt_id: values._submission_attempt_id,
       _contact_company: spamTrapInput?.value || "",
       submitted_at: new Date().toISOString()
     };
